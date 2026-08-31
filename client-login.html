@@ -11,274 +11,64 @@ content=“width=device-width, initial-scale=1.0”
 name=“theme-color”
 content=”#0f766e”
 
-  <title>MOSELI | Login do Cliente</title>
-  <!-- Main CSS -->
-  <link
-    rel="stylesheet"
-    href="./style.css"
-  >
-  <!-- Client Login CSS -->
+<meta
+name=“description”
+content=“MOSELI - Portal do Cliente”
+
+  <title>MOSELI | Portal do Cliente</title>
+  <!-- MOSELI CLIENT LOGIN CSS -->
   <link
     rel="stylesheet"
     href="./client-login.css"
   >
-  <style>
-    /* =====================================================
-       MOSELI | CLIENT LOGIN FALLBACK STYLES
-       These styles guarantee the login works even if
-       client-login.css is temporarily unavailable.
-       ===================================================== */
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-      background: #f8fafc;
-      color: #0f172a;
-    }
-    .client-login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background:
-        linear-gradient(
-          135deg,
-          #f0fdfa 0%,
-          #ffffff 50%,
-          #f8fafc 100%
-        );
-    }
-    .client-login-wrapper {
-      width: 100%;
-      max-width: 440px;
-    }
-    .client-login-brand {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .client-login-logo {
-      width: 68px;
-      height: 68px;
-      margin: 0 auto 14px;
-      border-radius: 18px;
-      background: #0f766e;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 28px;
-      font-weight: 800;
-      box-shadow:
-        0 12px 30px
-        rgba(15, 118, 110, 0.20);
-    }
-    .client-login-brand h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .client-login-brand p {
-      margin: 6px 0 0;
-      color: #64748b;
-      font-size: 14px;
-    }
-    .client-login-card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow:
-        0 20px 50px
-        rgba(15, 23, 42, 0.08);
-    }
-    .client-login-card h2 {
-      margin: 0 0 8px;
-      font-size: 22px;
-    }
-    .client-login-description {
-      margin: 0 0 24px;
-      color: #64748b;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    .client-login-message {
-      display: none;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .client-login-message.show {
-      display: block;
-    }
-    .client-login-message.error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-    }
-    .client-login-message.success {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      color: #166534;
-    }
-    .client-login-form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .client-login-field {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-    .client-login-field label {
-      color: #334155;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .client-login-field input {
-      width: 100%;
-      padding: 13px 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: #fff;
-      color: #0f172a;
-      font-size: 15px;
-      outline: none;
-    }
-    .client-login-field input:focus {
-      border-color: #0f766e;
-      box-shadow:
-        0 0 0 3px
-        rgba(15, 118, 110, 0.10);
-    }
-    .client-login-password {
-      position: relative;
-    }
-    .client-login-password input {
-      padding-right: 75px;
-    }
-    .password-toggle {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      border: 0;
-      background: transparent;
-      color: #0f766e;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      padding: 8px;
-    }
-    .client-login-options {
-      display: flex;
-      justify-content: flex-end;
-    }
-    .forgot-password-btn {
-      border: 0;
-      background: transparent;
-      color: #0f766e;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 4px 0;
-    }
-    .forgot-password-btn:hover {
-      text-decoration: underline;
-    }
-    .client-login-submit {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px 18px;
-      background: #0f766e;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .client-login-submit:hover {
-      background: #115e59;
-    }
-    .client-login-submit:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-    .client-login-footer {
-      text-align: center;
-      margin-top: 22px;
-      color: #94a3b8;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-    .client-login-back {
-      display: inline-block;
-      margin-top: 10px;
-      color: #0f766e;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .client-login-back:hover {
-      text-decoration: underline;
-    }
-    @media (max-width: 480px) {
-      .client-login-page {
-        padding: 16px;
-      }
-      .client-login-card {
-        padding: 24px 20px;
-        border-radius: 16px;
-      }
-    }
-  </style>
 </head>
 <body>
   <main class="client-login-page">
 <div class="client-login-wrapper">
-  <!-- BRAND -->
+  <!-- =================================================
+       BRAND
+  ================================================== -->
   <div class="client-login-brand">
-    <div class="client-login-logo">
+    <div
+      class="client-login-logo"
+      aria-label="MOSELI"
+    >
       M
     </div>
     <h1>MOSELI</h1>
-    <p>
-      Gestão de Resíduos
-    </p>
+    <p>Gestão de Resíduos</p>
   </div>
-  <!-- LOGIN CARD -->
-  <section class="client-login-card">
-    <h2>
+  <!-- =================================================
+       LOGIN CARD
+  ================================================== -->
+  <section
+    class="client-login-card"
+    aria-labelledby="loginTitle"
+  >
+    <h2 id="loginTitle">
       Portal do Cliente
     </h2>
     <p class="client-login-description">
-      Entre na sua conta para consultar
-      o seu serviço, recolhas, pagamentos
-      e pedidos.
+      Entre na sua conta para consultar o seu serviço,
+      recolhas, pagamentos e pedidos.
     </p>
-    <!-- MESSAGE -->
+    <!-- =================================================
+         MESSAGE
+    ================================================== -->
     <div
       id="loginMessage"
       class="client-login-message"
       role="alert"
-      aria-live="polite">
-    </div>
-    <!-- LOGIN FORM -->
+      aria-live="polite"
+    ></div>
+    <!-- =================================================
+         LOGIN FORM
+    ================================================== -->
     <form
       id="clientLoginForm"
       class="client-login-form"
-      novalidate>
+      novalidate
+    >
       <!-- EMAIL -->
       <div class="client-login-field">
         <label for="clientEmail">
@@ -289,7 +79,8 @@ content=”#0f766e”
           id="clientEmail"
           name="email"
           placeholder="cliente@email.com"
-          autocomplete="username"
+          autocomplete="email"
+          inputmode="email"
           required
         >
       </div>
@@ -305,12 +96,15 @@ content=”#0f766e”
             name="password"
             placeholder="Introduza a sua palavra-passe"
             autocomplete="current-password"
+            minlength="6"
             required
           >
           <button
             type="button"
             id="togglePassword"
-            class="password-toggle">
+            class="password-toggle"
+            aria-label="Mostrar palavra-passe"
+          >
             Mostrar
           </button>
         </div>
@@ -320,23 +114,28 @@ content=”#0f766e”
         <button
           type="button"
           id="forgotPasswordBtn"
-          class="forgot-password-btn">
+          class="forgot-password-btn"
+        >
           Esqueci a palavra-passe
         </button>
       </div>
-      <!-- LOGIN -->
+      <!-- LOGIN BUTTON -->
       <button
         type="submit"
         id="loginButton"
-        class="client-login-submit">
+        class="client-login-submit"
+      >
         Entrar no Portal
       </button>
     </form>
   </section>
-  <!-- FOOTER -->
+  <!-- =================================================
+       FOOTER
+  ================================================== -->
   <div class="client-login-footer">
     <div>
-      © <span id="loginYear"></span>
+      ©
+      <span id="loginYear">2026</span>
       MOSELI
     </div>
     <div>
@@ -344,13 +143,26 @@ content=”#0f766e”
     </div>
     <a
       href="./index.html"
-      class="client-login-back">
+      id="backToHome"
+      class="client-login-back"
+    >
       ← Voltar
     </a>
   </div>
 </div>
   </main>
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./client-login.js"></script>
+  <!-- =====================================================
+       SUPABASE
+       Load Supabase BEFORE client-login.js
+  ====================================================== -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  ></script>
+  <!-- =====================================================
+       MOSELI CLIENT LOGIN JAVASCRIPT
+  ====================================================== -->
+  <script
+    src="./client-login.js"
+  ></script>
 </body>
 </html>
