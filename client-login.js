@@ -1,5 +1,5 @@
 “use strict”;
-
+alert("MOSELI JavaScript carregado");
 console.log(“MOSELI DIAGNOSTIC: JavaScript carregado”);
 
 document.addEventListener(“DOMContentLoaded”, function () {
