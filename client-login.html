@@ -1,1 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
 
+  <title>MOSELI | Portal do Cliente</title>
+
+  <link rel="stylesheet" href="./client-login.css">
+</head>
+
+<body>
+
+  <main class="login-page">
+
+    <section class="login-card">
+
+      <div class="brand">
+        <div class="brand-logo">M</div>
+
+        <h1>MOSELI</h1>
+        <p>Gestão de Resíduos</p>
+      </div>
+
+      <div class="language-switcher">
+        <button type="button" id="langPT" class="language-btn active">
+          PT
+        </button>
+
+        <button type="button" id="langEN" class="language-btn">
+          EN
+        </button>
+      </div>
+
+      <div class="login-content">
+
+        <h2 id="loginTitle">
+          Portal do Cliente
+        </h2>
+
+        <p id="loginDescription">
+          Entre na sua conta para consultar os seus serviços,
+          recolhas, pagamentos e pedidos.
+        </p>
+
+        <div
+          id="loginMessage"
+          class="message"
+          role="alert">
+        </div>
+
+        <form id="clientLoginForm">
+
+          <div class="form-group">
+
+            <label for="clientEmail" id="emailLabel">
+              Email
+            </label>
+
+            <input
+              type="email"
+              id="clientEmail"
+              name="email"
+              placeholder="cliente@email.com"
+              autocomplete="email"
+              required>
+
+          </div>
+
+          <div class="form-group">
+
+            <label for="clientPassword" id="passwordLabel">
+              Palavra-passe
+            </label>
+
+            <div class="password-wrapper">
+
+              <input
+                type="password"
+                id="clientPassword"
+                name="password"
+                placeholder="Introduza a sua palavra-passe"
+                autocomplete="current-password"
+                minlength="6"
+                required>
+
+              <button
+                type="button"
+                id="togglePassword"
+                class="password-toggle">
+                Mostrar
+              </button>
+
+            </div>
+
+          </div>
+
+          <button
+            type="button"
+            id="forgotPasswordBtn"
+            class="forgot-button">
+            Esqueci a palavra-passe
+          </button>
+
+          <button
+            type="submit"
+            id="loginButton"
+            class="login-button">
+            Entrar no Portal
+          </button>
+
+        </form>
+
+      </div>
+
+      <div class="login-footer">
+
+        <p>
+          © <span id="loginYear"></span> MOSELI
+        </p>
+
+        <p id="secureText">
+          Portal seguro do cliente
+        </p>
+
+        <a
+          href="./index.html"
+          id="backLink">
+          ← Voltar
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- MOSELI Client Login -->
+  <script src="./client-login.js"></script>
+
+</body>
+</html>
