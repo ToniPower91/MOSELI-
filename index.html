@@ -1,1 +1,2336 @@
 
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f766e">
+  <title>MOSELI | Gestão de Resíduos</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app-shell">
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">
+        
+      </div>
+      <div class="brand-text">
+        <strong>MOSELI</strong>
+        <span>Gestão de Resíduos</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <span class="sidebar-label">PRINCIPAL</span>
+      <button class="nav-btn active"
+              onclick="showPage('dashboard', this)"
+              data-page="dashboard">
+        <span class="nav-icon">▦</span>
+        <span data-i18n="dashboard">Painel</span>
+      </button>
+      <button class="nav-btn"
+              onclick="showPage('clients', this)"
+              data-page="clients">
+        <span class="nav-icon">♙</span>
+        <span data-i18n="clients">Clientes</span>
+      </button>
+      <button class="nav-btn"
+              onclick="showPage('subscriptions', this)"
+              data-page="subscriptions">
+        <span class="nav-icon">▤</span>
+        <span data-i18n="subscriptions">Subscrições</span>
+      </button>
+      <button class="nav-btn"
+              onclick="showPage('payments', this)"
+              data-page="payments">
+        <span class="nav-icon">▣</span>
+        <span data-i18n="payments">Pagamentos</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <span class="sidebar-label">OPERAÇÕES</span>
+      <button class="nav-btn"
+              onclick="showPage('collections', this)"
+              data-page="collections">
+        <span class="nav-icon">▰</span>
+        <span data-i18n="collections">Recolhas</span>
+      </button>
+      <button class="nav-btn"
+              onclick="showPage('requests', this)"
+              data-page="requests">
+        <span class="nav-icon">✉</span>
+        <span data-i18n="requests">Pedidos</span>
+      </button>
+      <button class="nav-btn"
+              onclick="showPage('news', this)"
+              data-page="news">
+        <span class="nav-icon">▤</span>
+        <span data-i18n="news">Notícias</span>
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="portal-btn"
+              onclick="openMOSELIportal()">
+        <span>↗</span>
+        <div>
+          <strong>MOSELIportal</strong>
+          <small>Portal do Cliente</small>
+        </div>
+      </button>
+    </div>
+  </aside>
+  <!-- =========================
+       MAIN AREA
+  ========================== -->
+  <div class="main-area">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn"
+                onclick="toggleSidebar()">
+          ☰
+        </button>
+        <div>
+          <h1 id="pageTitle">
+            Painel
+          </h1>
+          <p id="pageSubtitle">
+            Visão geral da gestão de resíduos
+          </p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="language-btn"
+                id="languageBtn"
+                onclick="toggleLanguage()">
+          🇬🇧 English
+        </button>
+        <button class="notification-btn"
+                onclick="showNotifications()">
+          🔔
+          <span class="notification-dot"></span>
+        </button>
+        <button class="user-menu"
+                onclick="showUserMenu()">
+          <span class="user-avatar">
+            M
+          </span>
+          <span class="user-info">
+            <strong>Administrador</strong>
+            <small>MOSELI</small>
+          </span>
+          <span>⌄</span>
+        </button>
+      </div>
+    </header>
+    <!-- =========================
+         CONTENT
+    ========================== -->
+    <main class="content">
+      <!-- =================================
+           DASHBOARD
+      ================================== -->
+      <section id="dashboard"
+               class="page active-page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              MOSELI
+            </span>
+            <h2 data-i18n="dashboard">
+              Painel
+            </h2>
+            <p data-i18n="dashboardDescription">
+              Visão geral do seu negócio de gestão de resíduos.
+            </p>
+          </div>
+          <div class="date-display">
+            <span>Hoje</span>
+            <strong id="currentDate">
+              —
+            </strong>
+          </div>
+        </div>
+        <!-- KPI CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-icon">
+              ♙
+            </div>
+            <div class="stat-content">
+              <span data-i18n="activeClients">
+                Clientes Activos
+              </span>
+              <strong id="dashboardActiveClients">
+                0
+              </strong>
+              <small>
+                <b>↑</b>
+                <span data-i18n="fromLastMonth">
+                  desde o mês passado
+                </span>
+              </small>
+            </div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              ▤
+            </div>
+            <div class="stat-content">
+              <span data-i18n="activeSubscriptions">
+                Subscrições Activas
+              </span>
+              <strong id="dashboardActiveSubscriptions">
+                0
+              </strong>
+              <small>
+                <b>●</b>
+                <span data-i18n="currentlyActive">
+                  actualmente activas
+                </span>
+              </small>
+            </div>
+          </div>
+          <div class="stat-card teal">
+            <div class="stat-icon">
+              MT
+            </div>
+            <div class="stat-content">
+              <span data-i18n="paymentsThisMonth">
+                Pagamentos Este Mês
+              </span>
+              <strong id="dashboardPaymentsThisMonth">
+                0 MT
+              </strong>
+              <small>
+                <b>↑</b>
+                <span data-i18n="received">
+                  recebidos
+                </span>
+              </small>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">
+              !
+            </div>
+            <div class="stat-content">
+              <span data-i18n="outstanding">
+                Valores Pendentes
+              </span>
+              <strong id="dashboardOutstanding">
+                0 MT
+              </strong>
+              <small>
+                <span data-i18n="needsAttention">
+                  requer atenção
+                </span>
+              </small>
+            </div>
+          </div>
+        </div>
+        <!-- OPERATIONS -->
+        <div class="section-title">
+          <div>
+            <h3 data-i18n="operations">
+              Operações
+            </h3>
+            <p data-i18n="operationsDescription">
+              Estado actual das operações de recolha.
+            </p>
+          </div>
+        </div>
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <span class="mini-icon blue-bg">
+              ▰
+            </span>
+            <div>
+              <small data-i18n="todayCollections">
+                Recolhas Hoje
+              </small>
+              <strong id="dashboardTodayCollections">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-icon green-bg">
+              ✓
+            </span>
+            <div>
+              <small data-i18n="completedCollections">
+                Recolhas Concluídas
+              </small>
+              <strong id="dashboardCompletedCollections">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-icon orange-bg">
+              ◷
+            </span>
+            <div>
+              <small data-i18n="upcomingCollections">
+                Próximas Recolhas
+              </small>
+              <strong id="dashboardUpcomingCollections">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-icon red-bg">
+              !
+            </span>
+            <div>
+              <small data-i18n="missedCollections">
+                Recolhas Perdidas
+              </small>
+              <strong id="dashboardMissedCollections">
+                0
+              </strong>
+            </div>
+          </div>
+        </div>
+        <!-- DASHBOARD GRID -->
+        <div class="dashboard-grid">
+          <!-- TODAY COLLECTIONS -->
+          <div class="dashboard-panel large-panel">
+            <div class="panel-heading">
+              <div>
+                <h3 data-i18n="todaysCollections">
+                  Recolhas de Hoje
+                </h3>
+                <p>
+                  <span id="todayCollectionLabel">
+                    —
+                  </span>
+                </p>
+              </div>
+              <button class="text-btn"
+                      onclick="showPage('collections')"
+                      data-i18n="viewAll">
+                Ver todas →
+              </button>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="client">
+                      Cliente
+                    </th>
+                    <th data-i18n="time">
+                      Hora
+                    </th>
+                    <th data-i18n="location">
+                      Localização
+                    </th>
+                    <th data-i18n="collector">
+                      Recolhedor
+                    </th>
+                    <th data-i18n="status">
+                      Estado
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTodayCollectionsTable">
+                  <tr>
+                    <td colspan="5"
+                        class="empty-state">
+                      <div class="empty-icon">
+                        ▰
+                      </div>
+                      <span data-i18n="noCollectionsToday">
+                        Não existem recolhas agendadas para hoje.
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- REQUESTS -->
+          <div class="dashboard-panel">
+            <div class="panel-heading">
+              <div>
+                <h3 data-i18n="recentRequests">
+                  Pedidos Recentes
+                </h3>
+                <p data-i18n="customerService">
+                  Atendimento ao cliente
+                </p>
+              </div>
+              <button class="text-btn"
+                      onclick="showPage('requests')">
+                →
+              </button>
+            </div>
+            <div id="dashboardRecentRequests"
+                 class="request-list">
+              <div class="empty-state">
+                <div class="empty-icon">
+                  ✉
+                </div>
+                <span data-i18n="noRequests">
+                  Não existem pedidos recentes.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- RECENT PAYMENTS -->
+        <div class="dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h3 data-i18n="recentPayments">
+                Pagamentos Recentes
+              </h3>
+              <p data-i18n="paymentActivity">
+                Actividade de pagamentos
+              </p>
+            </div>
+            <button class="text-btn"
+                    onclick="showPage('payments')"
+                    data-i18n="viewAll">
+              Ver todos →
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="client">
+                    Cliente
+                  </th>
+                  <th data-i18n="amount">
+                    Valor
+                  </th>
+                  <th data-i18n="method">
+                    Método
+                  </th>
+                  <th data-i18n="date">
+                    Data
+                  </th>
+                  <th data-i18n="status">
+                    Estado
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="dashboardRecentPayments">
+                <tr>
+                  <td colspan="5"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      MT
+                    </div>
+                    <span data-i18n="noPayments">
+                      Não existem pagamentos registados.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           CLIENTS
+      ================================== -->
+      <section id="clients"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              GESTÃO
+            </span>
+            <h2 data-i18n="clients">
+              Clientes
+            </h2>
+            <p data-i18n="clientsDescription">
+              Gerir clientes residenciais e empresariais.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openClientForm()">
+            <span>+</span>
+            <span data-i18n="addClient">
+              Adicionar Cliente
+            </span>
+          </button>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="clientSearch"
+                   placeholder="Pesquisar clientes..."
+                   data-i18n-placeholder="searchClients"
+                   oninput="renderClients()">
+          </div>
+          <select id="clientTypeFilter"
+                  onchange="renderClients()">
+            <option value="all"
+                    data-i18n="allClients">
+              Todos os Clientes
+            </option>
+            <option value="residential"
+                    data-i18n="residential">
+              Residencial
+            </option>
+            <option value="business"
+                    data-i18n="business">
+              Empresarial
+            </option>
+          </select>
+          <select id="clientStatusFilter"
+                  onchange="renderClients()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="active"
+                    data-i18n="active">
+              Activo
+            </option>
+            <option value="inactive"
+                    data-i18n="inactive">
+              Inactivo
+            </option>
+          </select>
+        </div>
+        <div class="data-panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th data-i18n="client">
+                    Cliente
+                  </th>
+                  <th data-i18n="type">
+                    Tipo
+                  </th>
+                  <th data-i18n="phone">
+                    Telefone
+                  </th>
+                  <th data-i18n="plan">
+                    Plano
+                  </th>
+                  <th data-i18n="monthlyFee">
+                    Mensalidade
+                  </th>
+                  <th data-i18n="status">
+                    Estado
+                  </th>
+                  <th data-i18n="actions">
+                    Acções
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody">
+                <tr>
+                  <td colspan="8"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      ♙
+                    </div>
+                    <strong data-i18n="noClients">
+                      Nenhum cliente adicionado.
+                    </strong>
+                    <small data-i18n="addFirstClient">
+                      Adicione o seu primeiro cliente para começar.
+                    </small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           SUBSCRIPTIONS
+      ================================== -->
+      <section id="subscriptions"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              SERVIÇOS
+            </span>
+            <h2 data-i18n="subscriptions">
+              Subscrições
+            </h2>
+            <p data-i18n="subscriptionsDescription">
+              Gerir planos e subscrições dos clientes.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openSubscriptionForm()">
+            +
+            <span data-i18n="addSubscription">
+              Adicionar Subscrição
+            </span>
+          </button>
+        </div>
+        <div class="stats-grid compact">
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              ▤
+            </div>
+            <div class="stat-content">
+              <span data-i18n="activeSubscriptions">
+                Subscrições Activas
+              </span>
+              <strong id="activeSubscriptionCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">
+              MT
+            </div>
+            <div class="stat-content">
+              <span data-i18n="monthlyRevenue">
+                Receita Mensal
+              </span>
+              <strong id="subscriptionRevenue">
+                0 MT
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">
+              ◷
+            </div>
+            <div class="stat-content">
+              <span data-i18n="expiringThisMonth">
+                A Expirar Este Mês
+              </span>
+              <strong id="expiringSubscriptions">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">
+              ×
+            </div>
+            <div class="stat-content">
+              <span data-i18n="cancelled">
+                Canceladas
+              </span>
+              <strong id="cancelledSubscriptions">
+                0
+              </strong>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="subscriptionSearch"
+                   placeholder="Pesquisar subscrições..."
+                   oninput="renderSubscriptions()">
+          </div>
+          <select id="subscriptionStatusFilter"
+                  onchange="renderSubscriptions()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="active"
+                    data-i18n="active">
+              Activa
+            </option>
+            <option value="paused"
+                    data-i18n="paused">
+              Pausada
+            </option>
+            <option value="cancelled"
+                    data-i18n="cancelled">
+              Cancelada
+            </option>
+          </select>
+        </div>
+        <div class="data-panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th data-i18n="client">Cliente</th>
+                  <th data-i18n="plan">Plano</th>
+                  <th data-i18n="monthlyFee">Mensalidade</th>
+                  <th data-i18n="startDate">Data de Início</th>
+                  <th data-i18n="nextPayment">Próximo Pagamento</th>
+                  <th data-i18n="status">Estado</th>
+                  <th data-i18n="actions">Acções</th>
+                </tr>
+              </thead>
+              <tbody id="subscriptionsTableBody">
+                <tr>
+                  <td colspan="8"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      ▤
+                    </div>
+                    <span data-i18n="noSubscriptions">
+                      Nenhuma subscrição adicionada.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           PAYMENTS
+      ================================== -->
+      <section id="payments"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              FINANÇAS
+            </span>
+            <h2 data-i18n="payments">
+              Pagamentos
+            </h2>
+            <p data-i18n="paymentsDescription">
+              Registar e acompanhar pagamentos dos clientes.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openPaymentForm()">
+            +
+            <span data-i18n="recordPayment">
+              Registar Pagamento
+            </span>
+          </button>
+        </div>
+        <div class="stats-grid compact">
+          <div class="stat-card green">
+            <div class="stat-icon">
+              MT
+            </div>
+            <div class="stat-content">
+              <span data-i18n="paymentsThisMonth">
+                Pagamentos Este Mês
+              </span>
+              <strong id="paymentsMonthTotal">
+                0 MT
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              ✓
+            </div>
+            <div class="stat-content">
+              <span data-i18n="confirmed">
+                Confirmados
+              </span>
+              <strong id="confirmedPaymentCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">
+              ◷
+            </div>
+            <div class="stat-content">
+              <span data-i18n="pending">
+                Pendentes
+              </span>
+              <strong id="pendingPaymentCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">
+              !
+            </div>
+            <div class="stat-content">
+              <span data-i18n="outstanding">
+                Em Dívida
+              </span>
+              <strong id="outstandingPaymentTotal">
+                0 MT
+              </strong>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="paymentSearch"
+                   placeholder="Pesquisar pagamentos..."
+                   oninput="renderPayments()">
+          </div>
+          <select id="paymentMethodFilter"
+                  onchange="renderPayments()">
+            <option value="all"
+                    data-i18n="allMethods">
+              Todos os Métodos
+            </option>
+            <option value="mpesa">
+              M-Pesa
+            </option>
+            <option value="emola">
+              e-Mola
+            </option>
+            <option value="cash"
+                    data-i18n="cash">
+              Dinheiro
+            </option>
+          </select>
+          <select id="paymentStatusFilter"
+                  onchange="renderPayments()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="confirmed"
+                    data-i18n="confirmed">
+              Confirmado
+            </option>
+            <option value="pending"
+                    data-i18n="pending">
+              Pendente
+            </option>
+            <option value="rejected"
+                    data-i18n="rejected">
+              Rejeitado
+            </option>
+          </select>
+        </div>
+        <div class="data-panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th data-i18n="client">Cliente</th>
+                  <th data-i18n="period">Período</th>
+                  <th data-i18n="amount">Valor</th>
+                  <th data-i18n="method">Método</th>
+                  <th data-i18n="reference">Referência</th>
+                  <th data-i18n="date">Data</th>
+                  <th data-i18n="status">Estado</th>
+                  <th data-i18n="actions">Acções</th>
+                </tr>
+              </thead>
+              <tbody id="paymentsTableBody">
+                <tr>
+                  <td colspan="9"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      MT
+                    </div>
+                    <span data-i18n="noPayments">
+                      Nenhum pagamento registado.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           COLLECTIONS
+      ================================== -->
+      <section id="collections"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              OPERAÇÕES
+            </span>
+            <h2 data-i18n="collections">
+              Recolhas
+            </h2>
+            <p data-i18n="collectionsDescription">
+              Planear e acompanhar as recolhas de resíduos.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openCollectionForm()">
+            +
+            <span data-i18n="scheduleCollection">
+              Agendar Recolha
+            </span>
+          </button>
+        </div>
+        <div class="stats-grid compact">
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              ▰
+            </div>
+            <div class="stat-content">
+              <span data-i18n="todayCollections">
+                Recolhas Hoje
+              </span>
+              <strong id="todayCollectionCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card teal">
+            <div class="stat-icon">
+              ◷
+            </div>
+            <div class="stat-content">
+              <span data-i18n="scheduled">
+                Agendadas
+              </span>
+              <strong id="scheduledCollectionCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">
+              ✓
+            </div>
+            <div class="stat-content">
+              <span data-i18n="completed">
+                Concluídas
+              </span>
+              <strong id="completedCollectionCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">
+              !
+            </div>
+            <div class="stat-content">
+              <span data-i18n="missed">
+                Perdidas
+              </span>
+              <strong id="missedCollectionCount">
+                0
+              </strong>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input type="date"
+                 id="collectionDateFilter"
+                 onchange="renderCollections()">
+          <select id="collectionStatusFilter"
+                  onchange="renderCollections()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="scheduled"
+                    data-i18n="scheduled">
+              Agendada
+            </option>
+            <option value="completed"
+                    data-i18n="completed">
+              Concluída
+            </option>
+            <option value="missed"
+                    data-i18n="missed">
+              Perdida
+            </option>
+            <option value="cancelled"
+                    data-i18n="cancelled">
+              Cancelada
+            </option>
+          </select>
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="collectionSearch"
+                   placeholder="Pesquisar cliente ou bairro..."
+                   oninput="renderCollections()">
+          </div>
+        </div>
+        <div class="data-panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th data-i18n="client">Cliente</th>
+                  <th data-i18n="neighborhood">Bairro</th>
+                  <th data-i18n="collectionDate">Data</th>
+                  <th data-i18n="frequency">Frequência</th>
+                  <th data-i18n="collector">Recolhedor</th>
+                  <th data-i18n="status">Estado</th>
+                  <th data-i18n="actions">Acções</th>
+                </tr>
+              </thead>
+              <tbody id="collectionsTableBody">
+                <tr>
+                  <td colspan="8"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      ▰
+                    </div>
+                    <span data-i18n="noCollections">
+                      Nenhuma recolha agendada.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           REQUESTS
+      ================================== -->
+      <section id="requests"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              ATENDIMENTO
+            </span>
+            <h2 data-i18n="requests">
+              Pedidos de Clientes
+            </h2>
+            <p data-i18n="requestsDescription">
+              Gerir pedidos, reclamações e alterações de serviço.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openRequestForm()">
+            +
+            <span data-i18n="newRequest">
+              Novo Pedido
+            </span>
+          </button>
+        </div>
+        <div class="stats-grid compact">
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              ✉
+            </div>
+            <div class="stat-content">
+              <span data-i18n="newRequests">
+                Novos Pedidos
+              </span>
+              <strong id="newRequestCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">
+              ◷
+            </div>
+            <div class="stat-content">
+              <span data-i18n="inProgress">
+                Em Progresso
+              </span>
+              <strong id="inProgressRequestCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">
+              ✓
+            </div>
+            <div class="stat-content">
+              <span data-i18n="resolved">
+                Resolvidos
+              </span>
+              <strong id="resolvedRequestCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">
+              ×
+            </div>
+            <div class="stat-content">
+              <span data-i18n="cancellations">
+                Cancelamentos
+              </span>
+              <strong id="cancellationRequestCount">
+                0
+              </strong>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="requestSearch"
+                   placeholder="Pesquisar pedidos..."
+                   oninput="renderRequests()">
+          </div>
+          <select id="requestTypeFilter"
+                  onchange="renderRequests()">
+            <option value="all"
+                    data-i18n="allTypes">
+              Todos os Tipos
+            </option>
+            <option value="cancellation"
+                    data-i18n="cancellation">
+              Cancelamento
+            </option>
+            <option value="pause"
+                    data-i18n="pause">
+              Pausar Serviço
+            </option>
+            <option value="resume"
+                    data-i18n="resume">
+              Retomar Serviço
+            </option>
+            <option value="collection_change"
+                    data-i18n="collectionChange">
+              Alterar Data de Recolha
+            </option>
+            <option value="address_change"
+                    data-i18n="addressChange">
+              Alterar Endereço
+            </option>
+            <option value="complaint"
+                    data-i18n="complaint">
+              Reclamação
+            </option>
+            <option value="general"
+                    data-i18n="general">
+              Pedido Geral
+            </option>
+          </select>
+          <select id="requestStatusFilter"
+                  onchange="renderRequests()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="new"
+                    data-i18n="new">
+              Novo
+            </option>
+            <option value="in_progress"
+                    data-i18n="inProgress">
+              Em Progresso
+            </option>
+            <option value="resolved"
+                    data-i18n="resolved">
+              Resolvido
+            </option>
+            <option value="rejected"
+                    data-i18n="rejected">
+              Rejeitado
+            </option>
+          </select>
+        </div>
+        <div class="data-panel">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th data-i18n="client">Cliente</th>
+                  <th data-i18n="type">Tipo</th>
+                  <th data-i18n="subject">Assunto</th>
+                  <th data-i18n="date">Data</th>
+                  <th data-i18n="priority">Prioridade</th>
+                  <th data-i18n="status">Estado</th>
+                  <th data-i18n="actions">Acções</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTableBody">
+                <tr>
+                  <td colspan="8"
+                      class="empty-state">
+                    <div class="empty-icon">
+                      ✉
+                    </div>
+                    <span data-i18n="noRequests">
+                      Nenhum pedido registado.
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- =================================
+           NEWS
+      ================================== -->
+      <section id="news"
+               class="page">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow">
+              COMUNICAÇÃO
+            </span>
+            <h2 data-i18n="news">
+              Notícias e Actualizações
+            </h2>
+            <p data-i18n="newsDescription">
+              Publicar informações e actualizações para os clientes.
+            </p>
+          </div>
+          <button class="primary-btn"
+                  onclick="openAnnouncementForm()">
+            +
+            <span data-i18n="newAnnouncement">
+              Novo Anúncio
+            </span>
+          </button>
+        </div>
+        <div class="stats-grid compact">
+          <div class="stat-card green">
+            <div class="stat-icon">
+              ✓
+            </div>
+            <div class="stat-content">
+              <span data-i18n="published">
+                Publicados
+              </span>
+              <strong id="publishedAnnouncementCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">
+              ◷
+            </div>
+            <div class="stat-content">
+              <span data-i18n="drafts">
+                Rascunhos
+              </span>
+              <strong id="draftAnnouncementCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">
+              !
+            </div>
+            <div class="stat-content">
+              <span data-i18n="important">
+                Importantes
+              </span>
+              <strong id="importantAnnouncementCount">
+                0
+              </strong>
+            </div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon">
+              #
+            </div>
+            <div class="stat-content">
+              <span data-i18n="total">
+                Total
+              </span>
+              <strong id="totalAnnouncementCount">
+                0
+              </strong>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-box">
+            <span>⌕</span>
+            <input type="text"
+                   id="announcementSearch"
+                   placeholder="Pesquisar notícias..."
+                   oninput="renderAnnouncements()">
+          </div>
+          <select id="announcementStatusFilter"
+                  onchange="renderAnnouncements()">
+            <option value="all"
+                    data-i18n="allStatuses">
+              Todos os Estados
+            </option>
+            <option value="published"
+                    data-i18n="published">
+              Publicado
+            </option>
+            <option value="draft"
+                    data-i18n="draft">
+              Rascunho
+            </option>
+          </select>
+          <select id="announcementCategoryFilter"
+                  onchange="renderAnnouncements()">
+            <option value="all"
+                    data-i18n="allCategories">
+              Todas as Categorias
+            </option>
+            <option value="service"
+                    data-i18n="serviceUpdate">
+              Actualização de Serviço
+            </option>
+            <option value="collection"
+                    data-i18n="collectionUpdate">
+              Actualização de Recolha
+            </option>
+            <option value="important"
+                    data-i18n="importantNotice">
+              Aviso Importante
+            </option>
+            <option value="general"
+                    data-i18n="generalNews">
+              Notícias Gerais
+            </option>
+          </select>
+        </div>
+        <div id="announcementsList"
+             class="announcement-list">
+          <div class="empty-state card-empty">
+            <div class="empty-icon">
+              ▤
+            </div>
+            <strong data-i18n="noNews">
+              Nenhuma notícia publicada.
+            </strong>
+            <small data-i18n="createFirstAnnouncement">
+              Crie o primeiro anúncio para os seus clientes.
+            </small>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <span>
+        © <span id="footerYear">2026</span> MOSELI
+      </span>
+      <span>
+        <span data-i18n="wasteManagement">
+          Gestão de Resíduos
+        </span>
+      </span>
+    </footer>
+  </div>
+</div>
+<!-- =========================================
+     CLIENT MODAL
+========================================== -->
+<div id="clientModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          MOSELI
+        </span>
+        <h2 id="clientModalTitle"
+            data-i18n="addClient">
+          Adicionar Cliente
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closeClientForm()">
+        ×
+      </button>
+    </div>
+    <form id="clientForm"
+          onsubmit="saveClient(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label data-i18n="clientType">
+            Tipo de Cliente
+          </label>
+          <select id="clientType"
+                  required
+                  onchange="toggleBusinessFields()">
+            <option value="residential"
+                    data-i18n="residentialHousehold">
+              Residencial / Doméstico
+            </option>
+            <option value="business"
+                    data-i18n="businessCompany">
+              Empresarial / Empresa
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="fullName">
+            Nome Completo
+          </label>
+          <input type="text"
+                 id="clientName"
+                 required
+                 placeholder="Nome do cliente">
+        </div>
+        <div class="form-group"
+             id="businessNameGroup"
+             style="display:none;">
+          <label data-i18n="businessName">
+            Nome da Empresa
+          </label>
+          <input type="text"
+                 id="businessName"
+                 placeholder="Nome da empresa">
+        </div>
+        <div class="form-group">
+          <label data-i18n="phone">
+            Telefone
+          </label>
+          <input type="tel"
+                 id="clientPhone"
+                 required
+                 placeholder="+258 84 000 0000">
+        </div>
+        <div class="form-group">
+          <label>
+            WhatsApp
+          </label>
+          <input type="tel"
+                 id="clientWhatsapp"
+                 placeholder="+258 84 000 0000">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email"
+                 id="clientEmail"
+                 placeholder="cliente@email.com">
+        </div>
+        <div class="form-group">
+          <label data-i18n="province">
+            Província
+          </label>
+          <input type="text"
+                 id="clientProvince"
+                 placeholder="Nampula">
+        </div>
+        <div class="form-group">
+          <label data-i18n="city">
+            Cidade
+          </label>
+          <input type="text"
+                 id="clientCity"
+                 placeholder="Nampula">
+        </div>
+        <div class="form-group">
+          <label data-i18n="neighborhood">
+            Bairro
+          </label>
+          <input type="text"
+                 id="clientBairro"
+                 placeholder="Bairro">
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="address">
+            Rua / Endereço
+          </label>
+          <input type="text"
+                 id="clientAddress"
+                 placeholder="Rua, número da casa, referência">
+        </div>
+        <div class="form-group">
+          <label data-i18n="collectionFrequency">
+            Frequência de Recolha
+          </label>
+          <select id="collectionFrequency">
+            <option value="weekly"
+                    data-i18n="weekly">
+              Semanal
+            </option>
+            <option value="twice-weekly"
+                    data-i18n="twiceWeekly">
+              Duas vezes por semana
+            </option>
+            <option value="monthly"
+                    data-i18n="monthly">
+              Mensal
+            </option>
+            <option value="custom"
+                    data-i18n="custom">
+              Personalizada
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="collectionDay">
+            Dia de Recolha
+          </label>
+          <select id="collectionDay">
+            <option value="Monday"
+                    data-i18n="monday">
+              Segunda-feira
+            </option>
+            <option value="Tuesday"
+                    data-i18n="tuesday">
+              Terça-feira
+            </option>
+            <option value="Wednesday"
+                    data-i18n="wednesday">
+              Quarta-feira
+            </option>
+            <option value="Thursday"
+                    data-i18n="thursday">
+              Quinta-feira
+            </option>
+            <option value="Friday"
+                    data-i18n="friday">
+              Sexta-feira
+            </option>
+            <option value="Saturday"
+                    data-i18n="saturday">
+              Sábado
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="monthlySubscription">
+            Subscrição Mensal (MZN)
+          </label>
+          <input type="number"
+                 id="monthlyFee"
+                 min="0"
+                 step="50"
+                 required
+                 placeholder="1500">
+        </div>
+        <div class="form-group">
+          <label data-i18n="accountStatus">
+            Estado da Conta
+          </label>
+          <select id="clientStatus">
+            <option value="active"
+                    data-i18n="active">
+              Activo
+            </option>
+            <option value="inactive"
+                    data-i18n="inactive">
+              Inactivo
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="notes">
+            Observações
+          </label>
+          <textarea id="clientNotes"
+                    rows="3"
+                    placeholder="Informações adicionais"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closeClientForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="saveClient">
+          Guardar Cliente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     SUBSCRIPTION MODAL
+========================================== -->
+<div id="subscriptionModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          MOSELI
+        </span>
+        <h2 id="subscriptionModalTitle"
+            data-i18n="addSubscription">
+          Adicionar Subscrição
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closeSubscriptionForm()">
+        ×
+      </button>
+    </div>
+    <form id="subscriptionForm"
+          onsubmit="saveSubscription(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label data-i18n="client">
+            Cliente
+          </label>
+          <select id="subscriptionClient"
+                  required>
+            <option value=""
+                    data-i18n="selectClient">
+              Seleccionar Cliente
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="servicePlan">
+            Plano de Serviço
+          </label>
+          <select id="subscriptionPlan"
+                  required>
+            <option value="Residential Basic">
+              Residencial Básico
+            </option>
+            <option value="Residential Standard">
+              Residencial Standard
+            </option>
+            <option value="Residential Premium">
+              Residencial Premium
+            </option>
+            <option value="Business Basic">
+              Empresarial Básico
+            </option>
+            <option value="Business Standard">
+              Empresarial Standard
+            </option>
+            <option value="Business Commercial">
+              Empresarial Comercial
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="monthlyFee">
+            Mensalidade (MZN)
+          </label>
+          <input type="number"
+                 id="subscriptionFee"
+                 min="0"
+                 step="50"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="startDate">
+            Data de Início
+          </label>
+          <input type="date"
+                 id="subscriptionStartDate"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="billingDay">
+            Dia de Facturação
+          </label>
+          <select id="billingDay">
+            <option value="1">1</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="25">25</option>
+            <option value="30">30</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="status">
+            Estado
+          </label>
+          <select id="subscriptionStatus"
+                  onchange="toggleCancellationFields()">
+            <option value="active"
+                    data-i18n="active">
+              Activa
+            </option>
+            <option value="paused"
+                    data-i18n="paused">
+              Pausada
+            </option>
+            <option value="cancelled"
+                    data-i18n="cancelled">
+              Cancelada
+            </option>
+          </select>
+        </div>
+        <div class="form-group"
+             id="cancellationDateGroup"
+             style="display:none;">
+          <label data-i18n="cancellationDate">
+            Data de Cancelamento
+          </label>
+          <input type="date"
+                 id="cancellationDate">
+        </div>
+        <div class="form-group full-width"
+             id="cancellationReasonGroup"
+             style="display:none;">
+          <label data-i18n="cancellationReason">
+            Motivo do Cancelamento
+          </label>
+          <textarea id="cancellationReason"
+                    rows="3"></textarea>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="notes">
+            Observações
+          </label>
+          <textarea id="subscriptionNotes"
+                    rows="3"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closeSubscriptionForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="saveSubscription">
+          Guardar Subscrição
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     PAYMENT MODAL
+========================================== -->
+<div id="paymentModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          FINANÇAS
+        </span>
+        <h2 id="paymentModalTitle"
+            data-i18n="recordPayment">
+          Registar Pagamento
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closePaymentForm()">
+        ×
+      </button>
+    </div>
+    <form id="paymentForm"
+          onsubmit="savePayment(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label data-i18n="client">
+            Cliente
+          </label>
+          <select id="paymentClient"
+                  onchange="loadPaymentSubscriptions()"
+                  required>
+            <option value=""
+                    data-i18n="selectClient">
+              Seleccionar Cliente
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="subscription">
+            Subscrição
+          </label>
+          <select id="paymentSubscription"
+                  onchange="loadPaymentSubscriptionDetails()"
+                  required>
+            <option value=""
+                    data-i18n="selectSubscription">
+              Seleccionar Subscrição
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="paymentPeriod">
+            Período de Pagamento
+          </label>
+          <input type="month"
+                 id="paymentPeriod"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="amount">
+            Valor (MZN)
+          </label>
+          <input type="number"
+                 id="paymentAmount"
+                 min="0"
+                 step="50"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="paymentMethod">
+            Método de Pagamento
+          </label>
+          <select id="paymentMethod"
+                  required>
+            <option value="mpesa">
+              M-Pesa
+            </option>
+            <option value="emola">
+              e-Mola
+            </option>
+            <option value="cash"
+                    data-i18n="cash">
+              Dinheiro
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="reference">
+            Referência
+          </label>
+          <input type="text"
+                 id="paymentReference"
+                 placeholder="ID da transacção / recibo">
+        </div>
+        <div class="form-group">
+          <label data-i18n="paymentDate">
+            Data do Pagamento
+          </label>
+          <input type="date"
+                 id="paymentDate"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="paymentStatus">
+            Estado do Pagamento
+          </label>
+          <select id="paymentStatus">
+            <option value="confirmed"
+                    data-i18n="confirmed">
+              Confirmado
+            </option>
+            <option value="pending"
+                    data-i18n="pending">
+              Pendente
+            </option>
+            <option value="rejected"
+                    data-i18n="rejected">
+              Rejeitado
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="notes">
+            Observações
+          </label>
+          <textarea id="paymentNotes"
+                    rows="3"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closePaymentForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="savePayment">
+          Guardar Pagamento
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     COLLECTION MODAL
+========================================== -->
+<div id="collectionModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          OPERAÇÕES
+        </span>
+        <h2 id="collectionModalTitle"
+            data-i18n="scheduleCollection">
+          Agendar Recolha
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closeCollectionForm()">
+        ×
+      </button>
+    </div>
+    <form id="collectionForm"
+          onsubmit="saveCollection(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label data-i18n="client">
+            Cliente
+          </label>
+          <select id="collectionClient"
+                  onchange="loadCollectionSubscriptions()"
+                  required>
+            <option value=""
+                    data-i18n="selectClient">
+              Seleccionar Cliente
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="subscription">
+            Subscrição
+          </label>
+          <select id="collectionSubscription"
+                  required>
+            <option value=""
+                    data-i18n="selectSubscription">
+              Seleccionar Subscrição
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="collectionDate">
+            Data da Recolha
+          </label>
+          <input type="date"
+                 id="collectionDate"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="preferredTime">
+            Hora Preferida
+          </label>
+          <input type="time"
+                 id="collectionTime">
+        </div>
+        <div class="form-group">
+          <label data-i18n="frequency">
+            Frequência
+          </label>
+          <select id="collectionFrequency">
+            <option value="weekly"
+                    data-i18n="weekly">
+              Semanal
+            </option>
+            <option value="biweekly"
+                    data-i18n="biweekly">
+              Quinzenal
+            </option>
+            <option value="monthly"
+                    data-i18n="monthly">
+              Mensal
+            </option>
+            <option value="custom"
+                    data-i18n="custom">
+              Personalizada
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="assignedCollector">
+            Recolhedor Responsável
+          </label>
+          <input type="text"
+                 id="collectionAssignedTo"
+                 placeholder="Nome do recolhedor">
+        </div>
+        <div class="form-group">
+          <label data-i18n="status">
+            Estado
+          </label>
+          <select id="collectionStatus">
+            <option value="scheduled"
+                    data-i18n="scheduled">
+              Agendada
+            </option>
+            <option value="completed"
+                    data-i18n="completed">
+              Concluída
+            </option>
+            <option value="missed"
+                    data-i18n="missed">
+              Perdida
+            </option>
+            <option value="cancelled"
+                    data-i18n="cancelled">
+              Cancelada
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="collectionNotes">
+            Observações da Recolha
+          </label>
+          <textarea id="collectionNotes"
+                    rows="3"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closeCollectionForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="saveCollection">
+          Guardar Recolha
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     REQUEST MODAL
+========================================== -->
+<div id="requestModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          ATENDIMENTO
+        </span>
+        <h2 id="requestModalTitle"
+            data-i18n="newRequest">
+          Novo Pedido
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closeRequestForm()">
+        ×
+      </button>
+    </div>
+    <form id="requestForm"
+          onsubmit="saveRequest(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label data-i18n="client">
+            Cliente
+          </label>
+          <select id="requestClient"
+                  onchange="loadRequestSubscriptions()"
+                  required>
+            <option value=""
+                    data-i18n="selectClient">
+              Seleccionar Cliente
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="subscription">
+            Subscrição
+          </label>
+          <select id="requestSubscription">
+            <option value=""
+                    data-i18n="selectSubscriptionOptional">
+              Seleccionar Subscrição (opcional)
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="requestType">
+            Tipo de Pedido
+          </label>
+          <select id="requestType"
+                  required>
+            <option value="cancellation"
+                    data-i18n="cancellation">
+              Cancelamento
+            </option>
+            <option value="pause"
+                    data-i18n="pause">
+              Pausar Serviço
+            </option>
+            <option value="resume"
+                    data-i18n="resume">
+              Retomar Serviço
+            </option>
+            <option value="collection_change"
+                    data-i18n="collectionChange">
+              Alterar Data de Recolha
+            </option>
+            <option value="address_change"
+                    data-i18n="addressChange">
+              Alterar Endereço
+            </option>
+            <option value="complaint"
+                    data-i18n="complaint">
+              Reclamação
+            </option>
+            <option value="general"
+                    data-i18n="general">
+              Pedido Geral
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="priority">
+            Prioridade
+          </label>
+          <select id="requestPriority">
+            <option value="normal"
+                    data-i18n="normal">
+              Normal
+            </option>
+            <option value="high"
+                    data-i18n="high">
+              Alta
+            </option>
+            <option value="urgent"
+                    data-i18n="urgent">
+              Urgente
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="subject">
+            Assunto
+          </label>
+          <input type="text"
+                 id="requestSubject"
+                 required
+                 placeholder="Descrição breve">
+        </div>
+        <div class="form-group">
+          <label data-i18n="requestDate">
+            Data do Pedido
+          </label>
+          <input type="date"
+                 id="requestDate"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="effectiveDate">
+            Data Pretendida
+          </label>
+          <input type="date"
+                 id="requestEffectiveDate">
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="customerMessage">
+            Mensagem / Descrição do Cliente
+          </label>
+          <textarea id="requestDescription"
+                    rows="4"
+                    required></textarea>
+        </div>
+        <div class="form-group">
+          <label data-i18n="status">
+            Estado
+          </label>
+          <select id="requestStatus">
+            <option value="new"
+                    data-i18n="new">
+              Novo
+            </option>
+            <option value="in_progress"
+                    data-i18n="inProgress">
+              Em Progresso
+            </option>
+            <option value="resolved"
+                    data-i18n="resolved">
+              Resolvido
+            </option>
+            <option value="rejected"
+                    data-i18n="rejected">
+              Rejeitado
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="assignedTo">
+            Responsável
+          </label>
+          <input type="text"
+                 id="requestAssignedTo"
+                 placeholder="Administrador / Funcionário">
+        </div>
+        <div class="form-group full-width">
+          <label data-i18n="adminNotes">
+            Notas / Resolução
+          </label>
+          <textarea id="requestAdminNotes"
+                    rows="4"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closeRequestForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="saveRequest">
+          Guardar Pedido
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     ANNOUNCEMENT MODAL
+========================================== -->
+<div id="announcementModal"
+     class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">
+          COMUNICAÇÃO
+        </span>
+        <h2 id="announcementModalTitle"
+            data-i18n="newAnnouncement">
+          Novo Anúncio
+        </h2>
+      </div>
+      <button class="close-btn"
+              onclick="closeAnnouncementForm()">
+        ×
+      </button>
+    </div>
+    <form id="announcementForm"
+          onsubmit="saveAnnouncement(event)">
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label data-i18n="title">
+            Título
+          </label>
+          <input type="text"
+                 id="announcementTitle"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="category">
+            Categoria
+          </label>
+          <select id="announcementCategory"
+                  required>
+            <option value="service"
+                    data-i18n="serviceUpdate">
+              Actualização de Serviço
+            </option>
+            <option value="collection"
+                    data-i18n="collectionUpdate">
+              Actualização de Recolha
+            </option>
+            <option value="important"
+                    data-i18n="importantNotice">
+              Aviso Importante
+            </option>
+            <option value="general"
+                    data-i18n="generalNews">
+              Notícias Gerais
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="status">
+            Estado
+          </label>
+          <select id="announcementStatus">
+            <option value="published"
+                    data-i18n="published">
+              Publicado
+            </option>
+            <option value="draft"
+                    data-i18n="draft">
+              Rascunho
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-i18n="publishDate">
+            Data de Publicação
+          </label>
+          <input type="date"
+                 id="announcementDate"
+                 required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="importantAnnouncement">
+            Anúncio Importante
+          </label>
+          <select id="announcementImportant">
+            <option value="false"
+                    data-i18n="no">
+              Não
+            </option>
+            <option value="true"
+                    data-i18n="yes">
+              Sim
+            </option>
+          </select>
+        </div>
+        <div class="form-group full-width">
+          <label>
+            Título em Português
+          </label>
+          <input type="text"
+                 id="announcementTitlePt">
+        </div>
+        <div class="form-group full-width">
+          <label>
+            English Title
+          </label>
+          <input type="text"
+                 id="announcementTitleEn">
+        </div>
+        <div class="form-group full-width">
+          <label>
+            Conteúdo em Português
+          </label>
+          <textarea id="announcementContentPt"
+                    rows="5"></textarea>
+        </div>
+        <div class="form-group full-width">
+          <label>
+            English Content
+          </label>
+          <textarea id="announcementContentEn"
+                    rows="5"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button"
+                class="secondary-btn"
+                onclick="closeAnnouncementForm()"
+                data-i18n="cancel">
+          Cancelar
+        </button>
+        <button type="submit"
+                class="primary-btn"
+                data-i18n="saveAnnouncement">
+          Guardar Anúncio
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- =========================================
+     TOAST
+========================================== -->
+<div id="toast"
+     class="toast">
+  <span id="toastIcon">✓</span>
+  <span id="toastMessage">
+    —
+  </span>
+</div>
+<!-- JAVASCRIPT -->
+<script src="./script.js"></script>
+</body>
+</html>
