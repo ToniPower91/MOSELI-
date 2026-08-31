@@ -1,909 +1,630 @@
-/* =========================================================
-   MOSELI | CLIENT LOGIN
-   Supabase Authentication
-   ========================================================= */
+“use strict”;
 
-"use strict";
+/*
 
-console.log("MOSELI Client Login JS iniciado");
+MOSELI | CLIENT LOGIN
+Supabase Authentication
 
-/* =========================================================
-   SUPABASE CONFIG
-   ========================================================= */
+*/
+
+/* ========================================================
+SUPABASE CONFIGURATION
+======================================================== */
 
 const SUPABASE_URL =
-  "https://esumonohssxxalxsfshc.supabase.co";
+“https://esumonohssxxalxsfshc.supabase.co”;
 
-const SUPABASE_KEY =
-  "sb_publishable_lryWHU1aV0782oIFi4JKKg_Y4qugSlt";
+const SUPABASE_PUBLISHABLE_KEY =
+“sb_publishable_lryWHU1aV0782oIFi4JKKg_Y4qugSlt”;
 
-/* =========================================================
-   CHECK SUPABASE
-   ========================================================= */
+/* ========================================================
+STARTUP
+======================================================== */
+
+console.log(“MOSELI LOGIN: JavaScript iniciado”);
+
+/* ========================================================
+CHECK SUPABASE LIBRARY
+======================================================== */
 
 if (!window.supabase) {
 
-  console.error(
-    "MOSELI: Supabase não foi carregado."
-  );
-
-  alert(
-    "Erro: não foi possível carregar o Supabase."
-  );
-
-  throw new Error(
-    "Supabase library unavailable"
-  );
-}
-
-/* =========================================================
-   CREATE SUPABASE CLIENT
-   ========================================================= */
-
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
-
-console.log(
-  "MOSELI: Supabase conectado."
+console.error(
+“MOSELI LOGIN: Supabase JS não foi carregado.”
 );
 
-/* =========================================================
-   DOM
-   ========================================================= */
+alert(
+“Erro: o sistema de autenticação não foi carregado. “ +
+“Verifique a ligação à internet e tente novamente.”
+);
+
+throw new Error(
+“Supabase JavaScript library not loaded”
+);
+}
+
+/* ========================================================
+CREATE SUPABASE CLIENT
+======================================================== */
+
+const supabaseClient =
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_PUBLISHABLE_KEY,
+{
+auth: {
+persistSession: true,
+autoRefreshToken: true,
+detectSessionInUrl: true
+}
+}
+);
+
+console.log(
+“MOSELI LOGIN: Supabase inicializado”
+);
+
+/* ========================================================
+DOM ELEMENTS
+======================================================== */
 
 const form =
-  document.getElementById(
-    "clientLoginForm"
-  );
+document.getElementById(
+“clientLoginForm”
+);
 
 const emailInput =
-  document.getElementById(
-    "clientEmail"
-  );
+document.getElementById(
+“clientEmail”
+);
 
 const passwordInput =
-  document.getElementById(
-    "clientPassword"
-  );
+document.getElementById(
+“clientPassword”
+);
 
 const loginButton =
-  document.getElementById(
-    "loginButton"
-  );
-
-const forgotButton =
-  document.getElementById(
-    "forgotPasswordBtn"
-  );
-
-const togglePassword =
-  document.getElementById(
-    "togglePassword"
-  );
+document.getElementById(
+“loginButton”
+);
 
 const messageBox =
-  document.getElementById(
-    "loginMessage"
-  );
+document.getElementById(
+“loginMessage”
+);
 
-const yearElement =
-  document.getElementById(
-    "loginYear"
-  );
+const togglePassword =
+document.getElementById(
+“togglePassword”
+);
 
-const langPT =
-  document.getElementById(
-    "langPT"
-  );
+const forgotPasswordBtn =
+document.getElementById(
+“forgotPasswordBtn”
+);
 
-const langEN =
-  document.getElementById(
-    "langEN"
-  );
+const year =
+document.getElementById(
+“loginYear”
+);
 
-/* =========================================================
-   YEAR
-   ========================================================= */
+/* ========================================================
+CHECK DOM
+======================================================== */
 
-if (yearElement) {
+console.log(
+“MOSELI LOGIN: DOM:”,
+{
+form: !!form,
+email: !!emailInput,
+password: !!passwordInput,
+loginButton: !!loginButton,
+message: !!messageBox,
+togglePassword: !!togglePassword,
+forgotPassword: !!forgotPasswordBtn
+}
+);
 
-  yearElement.textContent =
-    new Date().getFullYear();
+/* ========================================================
+YEAR
+======================================================== */
+
+if (year) {
+
+year.textContent =
+new Date().getFullYear();
 
 }
 
-/* =========================================================
-   TRANSLATIONS
-   ========================================================= */
-
-const translations = {
-
-  pt: {
-
-    title:
-      "Portal do Cliente",
-
-    description:
-      "Entre na sua conta para consultar os seus serviços, recolhas, pagamentos e pedidos.",
-
-    email:
-      "Email",
-
-    emailPlaceholder:
-      "cliente@email.com",
-
-    password:
-      "Palavra-passe",
-
-    passwordPlaceholder:
-      "Introduza a sua palavra-passe",
-
-    show:
-      "Mostrar",
-
-    hide:
-      "Ocultar",
-
-    forgot:
-      "Esqueci a palavra-passe",
-
-    login:
-      "Entrar no Portal",
-
-    loggingIn:
-      "A entrar...",
-
-    secure:
-      "Portal seguro do cliente",
-
-    back:
-      "← Voltar"
-
-  },
-
-  en: {
-
-    title:
-      "Client Portal",
-
-    description:
-      "Sign in to your account to view your services, collections, payments and requests.",
-
-    email:
-      "Email",
-
-    emailPlaceholder:
-      "client@email.com",
-
-    password:
-      "Password",
-
-    passwordPlaceholder:
-      "Enter your password",
-
-    show:
-      "Show",
-
-    hide:
-      "Hide",
-
-    forgot:
-      "Forgot password?",
-
-    login:
-      "Sign In",
-
-    loggingIn:
-      "Signing in...",
-
-    secure:
-      "Secure client portal",
-
-    back:
-      "← Back"
-
-  }
-
-};
-
-let currentLanguage = "pt";
-
-/* =========================================================
-   LANGUAGE
-   ========================================================= */
-
-function setLanguage(language) {
-
-  currentLanguage =
-    language === "en"
-      ? "en"
-      : "pt";
-
-  const t =
-    translations[currentLanguage];
-
-  const title =
-    document.getElementById(
-      "loginTitle"
-    );
-
-  const description =
-    document.getElementById(
-      "loginDescription"
-    );
-
-  const emailLabel =
-    document.getElementById(
-      "emailLabel"
-    );
-
-  const passwordLabel =
-    document.getElementById(
-      "passwordLabel"
-    );
-
-  const secureText =
-    document.getElementById(
-      "secureText"
-    );
-
-  const backLink =
-    document.getElementById(
-      "backLink"
-    );
-
-  if (title)
-    title.textContent = t.title;
-
-  if (description)
-    description.textContent =
-      t.description;
-
-  if (emailLabel)
-    emailLabel.textContent =
-      t.email;
-
-  if (passwordLabel)
-    passwordLabel.textContent =
-      t.password;
-
-  if (emailInput)
-    emailInput.placeholder =
-      t.emailPlaceholder;
-
-  if (passwordInput)
-    passwordInput.placeholder =
-      t.passwordPlaceholder;
-
-  if (forgotButton)
-    forgotButton.textContent =
-      t.forgot;
-
-  if (loginButton)
-    loginButton.textContent =
-      t.login;
-
-  if (secureText)
-    secureText.textContent =
-      t.secure;
-
-  if (backLink)
-    backLink.textContent =
-      t.back;
-
-  if (togglePassword) {
-
-    togglePassword.textContent =
-      passwordInput &&
-      passwordInput.type === "text"
-        ? t.hide
-        : t.show;
-
-  }
-
-  if (langPT)
-    langPT.classList.toggle(
-      "active",
-      currentLanguage === "pt"
-    );
-
-  if (langEN)
-    langEN.classList.toggle(
-      "active",
-      currentLanguage === "en"
-    );
-
-  document.documentElement.lang =
-    currentLanguage;
-
-  localStorage.setItem(
-    "moseli_language",
-    currentLanguage
-  );
-}
-
-/* =========================================================
-   LANGUAGE BUTTONS
-   ========================================================= */
-
-if (langPT) {
-
-  langPT.addEventListener(
-    "click",
-    function () {
-
-      setLanguage("pt");
-
-    }
-  );
-
-}
-
-if (langEN) {
-
-  langEN.addEventListener(
-    "click",
-    function () {
-
-      setLanguage("en");
-
-    }
-  );
-
-}
-
-/* =========================================================
-   MESSAGES
-   ========================================================= */
+/* ========================================================
+MESSAGE
+======================================================== */
 
 function showMessage(
-  message,
-  type = "error"
+message,
+type = “error”
 ) {
 
-  if (!messageBox) {
+if (!messageBox) {
 
-    alert(message);
-    return;
+alert(message);
+return;
 
-  }
+}
 
-  messageBox.textContent =
-    message;
+messageBox.textContent =
+message;
 
-  messageBox.className =
-    "message show " + type;
+messageBox.className =
+“client-login-message show “ +
+type;
 
 }
 
 function clearMessage() {
 
-  if (!messageBox)
-    return;
+if (!messageBox) return;
 
-  messageBox.textContent = "";
+messageBox.textContent = “”;
 
-  messageBox.className =
-    "message";
+messageBox.className =
+“client-login-message”;
 
 }
 
-/* =========================================================
-   LOADING
-   ========================================================= */
+/* ========================================================
+LOADING
+======================================================== */
 
 function setLoading(
-  loading
+loading
 ) {
 
-  if (!loginButton)
-    return;
+if (!loginButton) return;
 
-  loginButton.disabled =
-    loading;
+loginButton.disabled =
+loading;
 
-  loginButton.textContent =
-    loading
-      ? translations[currentLanguage].loggingIn
-      : translations[currentLanguage].login;
+loginButton.textContent =
+loading
+? “A entrar…”
+: “Entrar no Portal”;
 
 }
 
-/* =========================================================
-   PASSWORD TOGGLE
-   ========================================================= */
+/* ========================================================
+PASSWORD VISIBILITY
+======================================================== */
 
 if (
-  togglePassword &&
-  passwordInput
+togglePassword &&
+passwordInput
 ) {
 
-  togglePassword.addEventListener(
-    "click",
-    function () {
+togglePassword.addEventListener(
+“click”,
+function () {
 
-      if (
-        passwordInput.type ===
-        "password"
-      ) {
+  const isPassword =
+    passwordInput.type ===
+    "password";
+  passwordInput.type =
+    isPassword
+      ? "text"
+      : "password";
+  togglePassword.textContent =
+    isPassword
+      ? "Ocultar"
+      : "Mostrar";
+}
 
-        passwordInput.type =
-          "text";
-
-        togglePassword.textContent =
-          translations[currentLanguage].hide;
-
-      } else {
-
-        passwordInput.type =
-          "password";
-
-        togglePassword.textContent =
-          translations[currentLanguage].show;
-
-      }
-
-    }
-  );
+);
 
 }
 
-/* =========================================================
-   GET CLIENT
-   ========================================================= */
+/* ========================================================
+FIND CLIENT
+======================================================== */
 
 async function getClient(
-  userId
+userId
 ) {
 
-  console.log(
-    "MOSELI: procurando cliente:",
-    userId
-  );
+console.log(
+“MOSELI LOGIN: procurando cliente:”,
+userId
+);
 
-  const result =
-    await supabaseClient
-      .from("clients")
-      .select(`
-        id,
-        auth_user_id,
-        client_code,
-        full_name,
-        business_name,
-        email,
-        phone,
-        address,
-        bairro,
-        city,
-        service_location,
-        status
-      `)
-      .eq(
-        "auth_user_id",
-        userId
-      )
-      .maybeSingle();
+const {
+data,
+error
+} =
+await supabaseClient
+.from(“clients”)
+.select(id, auth_user_id, client_code, full_name, business_name, email, phone, address, bairro, city, service_location, status)
+.eq(
+“auth_user_id”,
+userId
+)
+.maybeSingle();
 
-  console.log(
-    "MOSELI: resultado:",
-    result
-  );
+if (error) {
 
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-  return result.data;
+console.error(
+  "MOSELI LOGIN: erro clients:",
+  error
+);
+throw error;
 
 }
 
-/* =========================================================
-   LOGIN
-   ========================================================= */
+return data;
+
+}
+
+/* ========================================================
+LOGIN
+======================================================== */
 
 if (form) {
 
-  form.addEventListener(
-    "submit",
-    async function (event) {
+form.addEventListener(
+“submit”,
+async function (event) {
 
-      event.preventDefault();
-
-      console.log(
-        "MOSELI: login iniciado."
-      );
-
-      clearMessage();
-
-      const email =
-        emailInput.value.trim();
-
-      const password =
-        passwordInput.value;
-
-      if (!email) {
-
-        showMessage(
-          currentLanguage === "pt"
-            ? "Introduza o seu email."
-            : "Please enter your email."
-        );
-
-        emailInput.focus();
-
-        return;
-
-      }
-
-      if (!password) {
-
-        showMessage(
-          currentLanguage === "pt"
-            ? "Introduza a sua palavra-passe."
-            : "Please enter your password."
-        );
-
-        passwordInput.focus();
-
-        return;
-
-      }
-
-      setLoading(true);
-
-      try {
-
-        console.log(
-          "MOSELI: autenticando..."
-        );
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient.auth
-            .signInWithPassword({
-
-              email:
-                email,
-
-              password:
-                password
-
-            });
-
-        if (error) {
-
-          console.error(
-            "MOSELI AUTH ERROR:",
-            error
-          );
-
-          showMessage(
-            error.message,
-            "error"
-          );
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        if (!data.user) {
-
-          showMessage(
-            "Utilizador não encontrado.",
-            "error"
-          );
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        console.log(
-          "MOSELI: Auth OK:",
-          data.user.id
-        );
-
-        showMessage(
-          currentLanguage === "pt"
-            ? "Login efetuado. A verificar a conta..."
-            : "Login successful. Checking account...",
-          "success"
-        );
-
-        const client =
-          await getClient(
-            data.user.id
-          );
-
-        if (!client) {
-
-          console.error(
-            "MOSELI: cliente não encontrado."
-          );
-
-          await supabaseClient.auth.signOut();
-
-          showMessage(
-            currentLanguage === "pt"
-              ? "A conta foi autenticada, mas não está ligada a um cliente MOSELI."
-              : "The account is authenticated, but is not linked to a MOSELI client.",
-            "error"
-          );
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        if (
-          client.status &&
-          client.status.toLowerCase() !==
-            "active"
-        ) {
-
-          await supabaseClient.auth.signOut();
-
-          showMessage(
-            currentLanguage === "pt"
-              ? "A sua conta de cliente não está ativa."
-              : "Your client account is not active.",
-            "error"
-          );
-
-          setLoading(false);
-
-          return;
-
-        }
-
-        console.log(
-          "MOSELI: cliente confirmado:",
-          client
-        );
-
-        showMessage(
-          currentLanguage === "pt"
-            ? "Login efetuado com sucesso. A abrir o Portal..."
-            : "Login successful. Opening Portal...",
-          "success"
-        );
-
-        setTimeout(
-          function () {
-
-            window.location.href =
-              "./client-portal.html";
-
-          },
-          800
-        );
-
-      } catch (error) {
-
-        console.error(
-          "MOSELI LOGIN ERROR:",
-          error
-        );
-
-        showMessage(
-          error.message ||
-          "Não foi possível concluir o login.",
-          "error"
-        );
-
-        setLoading(false);
-
-      }
-
+  event.preventDefault();
+  event.stopPropagation();
+  console.log(
+    "MOSELI LOGIN: submit recebido"
+  );
+  clearMessage();
+  const email =
+    emailInput
+      ? emailInput.value.trim()
+      : "";
+  const password =
+    passwordInput
+      ? passwordInput.value
+      : "";
+  /* --------------------------------------------------
+     VALIDATION
+  -------------------------------------------------- */
+  if (!email) {
+    showMessage(
+      "Introduza o seu email.",
+      "error"
+    );
+    if (emailInput) {
+      emailInput.focus();
     }
-  );
-
-} else {
-
-  console.error(
-    "MOSELI: formulário não encontrado."
-  );
-
-}
-
-/* =========================================================
-   FORGOT PASSWORD
-   ========================================================= */
-
-if (forgotButton) {
-
-  forgotButton.addEventListener(
-    "click",
-    async function () {
-
-      clearMessage();
-
-      const email =
-        emailInput.value.trim();
-
-      if (!email) {
-
-        showMessage(
-          currentLanguage === "pt"
-            ? "Introduza o seu email primeiro."
-            : "Please enter your email first.",
-          "error"
-        );
-
-        emailInput.focus();
-
-        return;
-
-      }
-
-      forgotButton.disabled =
-        true;
-
-      const originalText =
-        forgotButton.textContent;
-
-      forgotButton.textContent =
-        currentLanguage === "pt"
-          ? "A enviar..."
-          : "Sending...";
-
-      try {
-
-        /*
-         * IMPORTANT:
-         * This URL must be registered in
-         * Supabase Authentication → URL Configuration.
-         */
-
-        const redirectUrl =
-          window.location.origin +
-          window.location.pathname;
-
-        console.log(
-          "MOSELI password reset URL:",
-          redirectUrl
-        );
-
-        const {
-          error
-        } =
-          await supabaseClient.auth
-            .resetPasswordForEmail(
-              email,
-              {
-                redirectTo:
-                  redirectUrl
-              }
-            );
-
-        if (error) {
-
-          console.error(
-            "MOSELI RESET ERROR:",
-            error
-          );
-
-          showMessage(
-            error.message,
-            "error"
-          );
-
-        } else {
-
-          showMessage(
-            currentLanguage === "pt"
-              ? "Enviámos um email para redefinir a sua palavra-passe. Verifique a sua caixa de entrada."
-              : "We sent you an email to reset your password. Please check your inbox.",
-            "success"
-          );
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          "MOSELI RESET ERROR:",
-          error
-        );
-
-        showMessage(
-          error.message ||
-          "Erro ao solicitar recuperação da palavra-passe.",
-          "error"
-        );
-
-      } finally {
-
-        forgotButton.disabled =
-          false;
-
-        forgotButton.textContent =
-          originalText;
-
-      }
-
+    return;
+  }
+  if (!password) {
+    showMessage(
+      "Introduza a sua palavra-passe.",
+      "error"
+    );
+    if (passwordInput) {
+      passwordInput.focus();
     }
-  );
-
-}
-
-/* =========================================================
-   EXISTING SESSION
-   ========================================================= */
-
-async function checkExistingSession() {
-
+    return;
+  }
+  setLoading(true);
   try {
-
+    console.log(
+      "MOSELI LOGIN: enviando credenciais para Supabase..."
+    );
+    /* -----------------------------------------------
+       SUPABASE AUTH
+    ----------------------------------------------- */
     const {
       data,
       error
     } =
       await supabaseClient.auth
-        .getSession();
-
+        .signInWithPassword({
+          email: email,
+          password: password
+        });
+    console.log(
+      "MOSELI LOGIN: resposta:",
+      {
+        user: data?.user?.id,
+        error: error
+      }
+    );
+    /* -----------------------------------------------
+       AUTH ERROR
+    ----------------------------------------------- */
     if (error) {
-
       console.error(
-        "MOSELI SESSION ERROR:",
+        "MOSELI LOGIN AUTH ERROR:",
         error
       );
-
-      return;
-
-    }
-
-    if (
-      data.session &&
-      data.session.user
-    ) {
-
-      console.log(
-        "MOSELI: sessão existente:",
-        data.session.user.id
+      let message =
+        error.message ||
+        "Não foi possível iniciar sessão.";
+      if (
+        error.message
+          ?.toLowerCase()
+          .includes("invalid login")
+      ) {
+        message =
+          "Email ou palavra-passe incorretos.";
+      }
+      showMessage(
+        message,
+        "error"
       );
-
+      setLoading(false);
+      return;
     }
-
-  } catch (error) {
-
+    /* -----------------------------------------------
+       USER CHECK
+    ----------------------------------------------- */
+    if (!data?.user) {
+      showMessage(
+        "O Supabase não devolveu um utilizador.",
+        "error"
+      );
+      setLoading(false);
+      return;
+    }
+    console.log(
+      "MOSELI LOGIN: utilizador autenticado:",
+      data.user.id
+    );
+    /* -----------------------------------------------
+       FIND CLIENT
+    ----------------------------------------------- */
+    showMessage(
+      "Login efetuado. A verificar a conta...",
+      "success"
+    );
+    const client =
+      await getClient(
+        data.user.id
+      );
+    /* -----------------------------------------------
+       CLIENT NOT FOUND
+    ----------------------------------------------- */
+    if (!client) {
+      console.error(
+        "MOSELI LOGIN: cliente não encontrado."
+      );
+      await supabaseClient.auth.signOut();
+      showMessage(
+        "A conta foi autenticada, mas não está ligada a um cliente MOSELI.",
+        "error"
+      );
+      setLoading(false);
+      return;
+    }
+    console.log(
+      "MOSELI LOGIN: cliente encontrado:",
+      client
+    );
+    /* -----------------------------------------------
+       CLIENT STATUS
+    ----------------------------------------------- */
+    if (
+      client.status &&
+      client.status.toLowerCase() !==
+        "active"
+    ) {
+      await supabaseClient.auth.signOut();
+      showMessage(
+        "A sua conta de cliente não está ativa.",
+        "error"
+      );
+      setLoading(false);
+      return;
+    }
+    /* -----------------------------------------------
+       SUCCESS
+    ----------------------------------------------- */
+    showMessage(
+      "Login efetuado com sucesso. A abrir o Portal...",
+      "success"
+    );
+    console.log(
+      "MOSELI LOGIN: sessão criada."
+    );
+    /*
+    IMPORTANT:
+    Give Supabase a moment to persist
+    the session before redirecting.
+    */
+    setTimeout(
+      function () {
+        window.location.replace(
+          "./client-portal.html"
+        );
+      },
+      500
+    );
+  }
+  catch (error) {
     console.error(
-      "MOSELI SESSION CHECK ERROR:",
+      "MOSELI LOGIN: erro inesperado:",
       error
     );
-
+    showMessage(
+      error?.message ||
+      "Ocorreu um erro inesperado durante o login.",
+      "error"
+    );
+    setLoading(false);
   }
+}
+
+);
 
 }
 
-/* =========================================================
-   INITIALIZE
-   ========================================================= */
+/* ========================================================
+FORGOT PASSWORD
+======================================================== */
 
-const savedLanguage =
-  localStorage.getItem(
-    "moseli_language"
+if (forgotPasswordBtn) {
+
+forgotPasswordBtn.addEventListener(
+“click”,
+async function (event) {
+
+  event.preventDefault();
+  console.log(
+    "MOSELI LOGIN: forgot password clicado"
   );
+  clearMessage();
+  const email =
+    emailInput
+      ? emailInput.value.trim()
+      : "";
+  if (!email) {
+    showMessage(
+      "Introduza o seu email primeiro.",
+      "error"
+    );
+    if (emailInput) {
+      emailInput.focus();
+    }
+    return;
+  }
+  forgotPasswordBtn.disabled =
+    true;
+  forgotPasswordBtn.textContent =
+    "A enviar...";
+  try {
+    /*
+    GitHub Pages / normal hosting:
+    Return to the current login page.
+    */
+    const redirectUrl =
+      window.location.origin +
+      window.location.pathname;
+    console.log(
+      "MOSELI LOGIN: reset URL:",
+      redirectUrl
+    );
+    const {
+      error
+    } =
+      await supabaseClient.auth
+        .resetPasswordForEmail(
+          email,
+          {
+            redirectTo:
+              redirectUrl
+          }
+        );
+    if (error) {
+      console.error(
+        "MOSELI LOGIN: reset error:",
+        error
+      );
+      showMessage(
+        error.message ||
+        "Não foi possível enviar o email de recuperação.",
+        "error"
+      );
+      return;
+    }
+    showMessage(
+      "Foi enviado um email para redefinir a sua palavra-passe. Verifique também a pasta de spam.",
+      "success"
+    );
+  }
+  catch (error) {
+    console.error(
+      "MOSELI LOGIN: reset exception:",
+      error
+    );
+    showMessage(
+      "Não foi possível solicitar a recuperação da palavra-passe.",
+      "error"
+    );
+  }
+  finally {
+    forgotPasswordBtn.disabled =
+      false;
+    forgotPasswordBtn.textContent =
+      "Esqueci a palavra-passe";
+  }
+}
 
-setLanguage(
-  savedLanguage === "en"
-    ? "en"
-    : "pt"
 );
+
+}
+
+/* ========================================================
+EXISTING SESSION
+======================================================== */
+
+async function checkExistingSession() {
+
+try {
+
+const {
+  data,
+  error
+} =
+  await supabaseClient.auth
+    .getSession();
+if (error) {
+  console.error(
+    "MOSELI LOGIN: session error:",
+    error
+  );
+  return;
+}
+if (
+  data?.session?.user
+) {
+  console.log(
+    "MOSELI LOGIN: sessão existente:",
+    data.session.user.id
+  );
+}
+
+}
+
+catch (error) {
+
+console.error(
+  "MOSELI LOGIN: session exception:",
+  error
+);
+
+}
+
+}
+
+/* ========================================================
+AUTH STATE LISTENER
+======================================================== */
+
+supabaseClient.auth.onAuthStateChange(
+function (
+event,
+session
+) {
+
+console.log(
+  "MOSELI LOGIN: Auth event:",
+  event,
+  session?.user?.id || null
+);
+
+}
+);
+
+/* ========================================================
+START
+======================================================== */
 
 checkExistingSession();
 
 console.log(
-  "MOSELI Client Login: pronto."
+“MOSELI LOGIN: pronto”
 );
