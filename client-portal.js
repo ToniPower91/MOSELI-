@@ -2,7 +2,7 @@
 
 /* =========================================================
 MOSELI | CLIENT PORTAL
-DASHBOARD - LIVE SUPABASE DATA
+LIVE DASHBOARD
 ========================================================= */
 
 const SUPABASE_URL =
@@ -11,22 +11,21 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 “sb_publishable_lryWHU1aV0782oIFi4JKKg_Y4qugSlt”;
 
-let supabaseClient = null;
-let currentUser = null;
-let currentClient = null;
+let db;
+let client;
 
 /* =========================================================
 START
 ========================================================= */
 
-document.addEventListener(“DOMContentLoaded”, async function () {
+document.addEventListener(“DOMContentLoaded”, async () => {
 
-console.log("MOSELI DASHBOARD START");
+console.log("MOSELI PORTAL: starting");
 if (!window.supabase) {
     console.error("Supabase library not loaded.");
     return;
 }
-supabaseClient = window.supabase.createClient(
+db = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY,
     {
@@ -37,200 +36,145 @@ supabaseClient = window.supabase.createClient(
         }
     }
 );
-await startPortal();
-
-});
-
-/* =========================================================
-START PORTAL
-========================================================= */
-
-async function startPortal() {
-
-try {
-    const {
-        data,
-        error
-    } = await supabaseClient.auth.getSession();
-    if (error) {
-        console.error("Session error:", error);
-        return;
-    }
-    if (!data.session) {
-        window.location.replace(
-            "./client-login.html"
-        );
-        return;
-    }
-    currentUser =
-        data.session.user;
-    console.log(
-        "Authenticated user:",
-        currentUser.id
-    );
-    /* -------------------------------------------------
-       GET CLIENT
-       ------------------------------------------------- */
-    const {
-        data: client,
-        error: clientError
-    } =
-        await supabaseClient
-            .from("clients")
-            .select("*")
-            .eq(
-                "auth_user_id",
-                currentUser.id
-            )
-            .maybeSingle();
-    if (clientError) {
-        console.error(
-            "Client error:",
-            clientError
-        );
-        return;
-    }
-    if (!client) {
-        console.error(
-            "No client linked to user."
-        );
-        await supabaseClient.auth.signOut();
-        window.location.replace(
-            "./client-login.html"
-        );
-        return;
-    }
-    currentClient =
-        client;
-    if (
-        String(
-            client.status
-        ).toLowerCase() !== "active"
-    ) {
-        console.error(
-            "Client account is not active."
-        );
-        return;
-    }
-    /* -------------------------------------------------
-       SAVE CLIENT
-       ------------------------------------------------- */
-    sessionStorage.setItem(
-        "moseli_client_id",
-        client.id
-    );
-    sessionStorage.setItem(
-        "moseli_client_code",
-        client.client_code
-    );
-    /* -------------------------------------------------
-       DISPLAY CLIENT
-       ------------------------------------------------- */
-    populateClient();
-    /* -------------------------------------------------
-       NAVIGATION
-       ------------------------------------------------- */
-    setupNavigation();
-    /* -------------------------------------------------
-       LOGOUT
-       ------------------------------------------------- */
-    setupLogout();
-    /* -------------------------------------------------
-       DASHBOARD
-       ------------------------------------------------- */
-    await loadDashboard();
-    /* -------------------------------------------------
-       OTHER PAGES
-       ------------------------------------------------- */
-    setupOtherPages();
-    console.log(
-        "MOSELI DASHBOARD READY"
-    );
-} catch (error) {
+const {
+    data: sessionData,
+    error: sessionError
+} = await db.auth.getSession();
+if (sessionError || !sessionData.session) {
     console.error(
-        "MOSELI PORTAL ERROR:",
-        error
+        "No authenticated session."
     );
+    window.location.replace(
+        "./client-login.html"
+    );
+    return;
 }
-
+const user =
+    sessionData.session.user;
+/* =====================================================
+   CLIENT
+   ===================================================== */
+const {
+    data: clientData,
+    error: clientError
+} = await db
+    .from("clients")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+if (clientError) {
+    console.error(
+        "Client query error:",
+        clientError
+    );
+    showError(
+        "Não foi possível carregar os dados do cliente."
+    );
+    return;
 }
-
-/* =========================================================
-CLIENT INFORMATION
-========================================================= */
-
-function populateClient() {
-
-const name =
-    currentClient.full_name ||
-    "Cliente";
+if (!clientData) {
+    console.error(
+        "No client linked to Auth user."
+    );
+    await db.auth.signOut();
+    window.location.replace(
+        "./client-login.html"
+    );
+    return;
+}
+client = clientData;
+if (
+    String(client.status).toLowerCase() !==
+    "active"
+) {
+    showError(
+        "A sua conta de cliente não está activa."
+    );
+    return;
+}
+/* =====================================================
+   CLIENT HEADER
+   ===================================================== */
 setText(
     "userName",
-    name
+    client.full_name
 );
 setText(
     "welcomeName",
-    name
+    client.full_name
 );
 setText(
     "userCode",
-    currentClient.client_code
+    client.client_code
 );
 setText(
     "dashboardClientCode",
-    currentClient.client_code
+    client.client_code
 );
 setText(
     "dashboardStatus",
-    translateStatus(
-        currentClient.status
-    )
+    translateStatus(client.status)
 );
+const initial =
+    client.full_name
+        ? client.full_name
+            .trim()
+            .charAt(0)
+            .toUpperCase()
+        : "M";
+setText(
+    "userInitial",
+    initial
+);
+/* =====================================================
+   PROFILE
+   ===================================================== */
 setText(
     "profileName",
-    name
+    client.full_name
 );
 setText(
     "profileEmail",
-    currentClient.email ||
-    currentUser.email ||
-    "--"
+    client.email || user.email
 );
 setText(
     "profileCode",
-    currentClient.client_code
+    client.client_code
 );
 setText(
     "profileStatus",
-    translateStatus(
-        currentClient.status
-    )
+    translateStatus(client.status)
 );
-setText(
-    "profilePhone",
-    currentClient.phone
-);
-setText(
-    "profileAddress",
-    [
-        currentClient.address,
-        currentClient.bairro,
-        currentClient.city
-    ]
-    .filter(Boolean)
-    .join(", ")
-);
-const initial =
-    name
-        .trim()
-        .charAt(0)
-        .toUpperCase();
-setText(
-    "userInitial",
-    initial || "M"
+/* =====================================================
+   NAVIGATION
+   ===================================================== */
+setupNavigation();
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+setupLogout();
+/* =====================================================
+   LOAD DASHBOARD
+   ===================================================== */
+await loadDashboard();
+/* =====================================================
+   SHOW PORTAL
+   ===================================================== */
+const loading =
+    document.getElementById("portalLoading");
+const content =
+    document.getElementById("portalContent");
+if (loading) {
+    loading.hidden = true;
+}
+if (content) {
+    content.hidden = false;
+}
+console.log(
+    "MOSELI PORTAL: ready"
 );
 
-}
+});
 
 /* =========================================================
 DASHBOARD
@@ -238,6 +182,76 @@ DASHBOARD
 
 async function loadDashboard() {
 
+await Promise.all([
+    loadSubscription(),
+    loadNextCollection(),
+    loadPayments(),
+    loadRequests()
+]);
+
+}
+
+/* =========================================================
+SUBSCRIPTION
+========================================================= */
+
+async function loadSubscription() {
+
+const {
+    data,
+    error
+} = await db
+    .from("subscriptions")
+    .select("*")
+    .eq("client_id", client.id)
+    .eq("status", "active")
+    .order("start_date", {
+        ascending: false
+    })
+    .limit(1)
+    .maybeSingle();
+if (error) {
+    console.error(
+        "Subscription error:",
+        error
+    );
+    return;
+}
+const box =
+    document.getElementById(
+        "serviceInfo"
+    );
+if (!box) {
+    return;
+}
+if (!data) {
+    box.innerHTML =
+        "Nenhum serviço activo encontrado.";
+    return;
+}
+box.innerHTML = `
+    <strong>
+        ${safe(data.plan_name)}
+    </strong>
+    <br><br>
+    <strong>Frequência:</strong>
+    ${safe(data.frequency)}
+    <br>
+    <strong>Preço:</strong>
+    ${money(
+        data.price,
+        data.currency
+    )}
+    <br>
+    <strong>Início:</strong>
+    ${formatDate(data.start_date)}
+    <br>
+    <strong>Estado:</strong>
+    ${translateStatus(data.status)}
+`;
+/* =====================================================
+   DASHBOARD SERVICE CARD
+   ===================================================== */
 const dashboard =
     document.querySelector(
         '[data-content="dashboard"]'
@@ -245,357 +259,317 @@ const dashboard =
 if (!dashboard) {
     return;
 }
-/* -----------------------------------------------------
-   SERVICE
-   ----------------------------------------------------- */
-const {
-    data: subscriptions,
-    error: subscriptionError
-} =
-    await supabaseClient
-        .from("subscriptions")
-        .select("*")
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .eq(
-            "status",
-            "active"
-        )
-        .order(
-            "start_date",
-            {
-                ascending: false
-            }
-        );
-if (subscriptionError) {
-    console.error(
-        "Subscription error:",
-        subscriptionError
+const serviceCard =
+    dashboard.querySelector(
+        ".portal-card:nth-child(3) strong"
     );
+if (serviceCard) {
+    serviceCard.textContent =
+        data.plan_name;
 }
-/* -----------------------------------------------------
-   NEXT COLLECTION
-   ----------------------------------------------------- */
+
+}
+
+/* =========================================================
+NEXT COLLECTION
+========================================================= */
+
+async function loadNextCollection() {
+
 const today =
     new Date()
         .toISOString()
         .split("T")[0];
 const {
-    data: collections,
-    error: collectionError
-} =
-    await supabaseClient
-        .from("collections")
-        .select("*")
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .gte(
-            "collection_date",
-            today
-        )
-        .neq(
-            "status",
-            "cancelled"
-        )
-        .order(
-            "collection_date",
-            {
-                ascending: true
-            }
-        )
-        .limit(1);
-if (collectionError) {
+    data,
+    error
+} = await db
+    .from("collections")
+    .select("*")
+    .eq("client_id", client.id)
+    .gte(
+        "collection_date",
+        today
+    )
+    .neq(
+        "status",
+        "cancelled"
+    )
+    .order(
+        "collection_date",
+        {
+            ascending: true
+        }
+    )
+    .limit(1)
+    .maybeSingle();
+if (error) {
     console.error(
         "Collection error:",
-        collectionError
+        error
+    );
+    return;
+}
+const dashboard =
+    document.querySelector(
+        '[data-content="dashboard"]'
+    );
+if (!dashboard) {
+    return;
+}
+let existing =
+    document.getElementById(
+        "nextCollectionCard"
+    );
+if (!existing) {
+    existing =
+        document.createElement("div");
+    existing.id =
+        "nextCollectionCard";
+    existing.className =
+        "portal-section";
+    dashboard.appendChild(
+        existing
     );
 }
-/* -----------------------------------------------------
-   PAYMENTS
-   ----------------------------------------------------- */
-const {
-    data: payments,
-    error: paymentError
-} =
-    await supabaseClient
-        .from("payments")
-        .select("*")
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .order(
-            "payment_date",
-            {
-                ascending: false
-            }
-        )
-        .limit(5);
-if (paymentError) {
-    console.error(
-        "Payment error:",
-        paymentError
-    );
-}
-/* -----------------------------------------------------
-   REQUESTS
-   ----------------------------------------------------- */
-const {
-    data: requests,
-    error: requestError
-} =
-    await supabaseClient
-        .from("requests")
-        .select("*")
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .in(
-            "status",
-            [
-                "new",
-                "in_progress"
-            ]
-        );
-if (requestError) {
-    console.error(
-        "Request error:",
-        requestError
-    );
-}
-/* -----------------------------------------------------
-   BUILD DASHBOARD
-   ----------------------------------------------------- */
-let dashboardHTML = "";
-/* -----------------------------------------------------
-   ACTIVE SERVICE
-   ----------------------------------------------------- */
-if (
-    subscriptions &&
-    subscriptions.length
-) {
-    const service =
-        subscriptions[0];
-    dashboardHTML += `
-        <div class="portal-section">
-            <h2>
-                Meu Serviço
-            </h2>
-            <div class="info-box">
-                <strong>
-                    ${safe(
-                        service.plan_name
-                    )}
-                </strong>
-                <br><br>
-                Frequência:
-                ${safe(
-                    service.frequency
-                )}
-                <br>
-                Valor:
-                ${money(
-                    service.price,
-                    service.currency
-                )}
-                <br>
-                Estado:
-                ${translateStatus(
-                    service.status
-                )}
-            </div>
-        </div>
-    `;
-} else {
-    dashboardHTML += `
-        <div class="portal-section">
-            <h2>
-                Meu Serviço
-            </h2>
-            <div class="empty-state">
-                Não existe um serviço activo
-                registado.
-            </div>
-        </div>
-    `;
-}
-/* -----------------------------------------------------
-   NEXT COLLECTION
-   ----------------------------------------------------- */
-dashboardHTML += `
-    <div class="portal-section">
+if (!data) {
+    existing.innerHTML = `
         <h2>
             Próxima Recolha
         </h2>
-`;
-if (
-    collections &&
-    collections.length
-) {
-    const collection =
-        collections[0];
-    dashboardHTML += `
-        <div class="info-box">
-            <strong>
-                ${date(
-                    collection.collection_date
-                )}
-            </strong>
-            ${
-                collection.collection_time
-                    ? `
-                        <br>
-                        Hora:
-                        ${safe(
-                            collection.collection_time
-                        )}
-                      `
-                    : ""
-            }
-            ${
-                collection.location
-                    ? `
-                        <br>
-                        Local:
-                        ${safe(
-                            collection.location
-                        )}
-                      `
-                    : ""
-            }
-            <br>
-            Estado:
-            ${translateStatus(
-                collection.status
-            )}
-        </div>
-    `;
-} else {
-    dashboardHTML += `
         <div class="empty-state">
             Não existem recolhas agendadas.
         </div>
     `;
+    return;
 }
-dashboardHTML += `
+existing.innerHTML = `
+    <h2>
+        Próxima Recolha
+    </h2>
+    <div class="info-box">
+        <strong>
+            ${formatDate(
+                data.collection_date
+            )}
+        </strong>
+        <br>
+        Hora:
+        ${safe(
+            data.collection_time ||
+            "--"
+        )}
+        <br>
+        Local:
+        ${safe(
+            data.location ||
+            "--"
+        )}
+        <br>
+        Frequência:
+        ${safe(
+            data.frequency ||
+            "--"
+        )}
+        <br>
+        Estado:
+        ${translateStatus(
+            data.status
+        )}
     </div>
 `;
-/* -----------------------------------------------------
-   PAYMENTS
-   ----------------------------------------------------- */
-dashboardHTML += `
-    <div class="portal-section">
+
+}
+
+/* =========================================================
+PAYMENTS
+========================================================= */
+
+async function loadPayments() {
+
+const {
+    data,
+    error
+} = await db
+    .from("payments")
+    .select("*")
+    .eq("client_id", client.id)
+    .order(
+        "payment_date",
+        {
+            ascending: false
+        }
+    )
+    .limit(5);
+if (error) {
+    console.error(
+        "Payments error:",
+        error
+    );
+    return;
+}
+const dashboard =
+    document.querySelector(
+        '[data-content="dashboard"]'
+    );
+if (!dashboard) {
+    return;
+}
+let section =
+    document.getElementById(
+        "recentPayments"
+    );
+if (!section) {
+    section =
+        document.createElement("div");
+    section.id =
+        "recentPayments";
+    section.className =
+        "portal-section";
+    dashboard.appendChild(
+        section
+    );
+}
+if (!data || data.length === 0) {
+    section.innerHTML = `
         <h2>
             Pagamentos Recentes
         </h2>
-`;
-if (
-    payments &&
-    payments.length
-) {
-    payments.forEach(
-        function (payment) {
-            dashboardHTML += `
-                <div class="info-box">
-                    <strong>
-                        ${money(
-                            payment.amount,
-                            payment.currency
-                        )}
-                    </strong>
-                    <br>
-                    Data:
-                    ${date(
-                        payment.payment_date
-                    )}
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        payment.status
-                    )}
-                </div>
-            `;
-        }
-    );
-} else {
-    dashboardHTML += `
         <div class="empty-state">
             Ainda não existem pagamentos.
         </div>
     `;
+    return;
 }
-dashboardHTML += `
-    </div>
+section.innerHTML = `
+    <h2>
+        Pagamentos Recentes
+    </h2>
+    ${data.map(payment => `
+        <div class="info-box">
+            <strong>
+                ${money(
+                    payment.amount,
+                    payment.currency
+                )}
+            </strong>
+            <br>
+            Data:
+            ${formatDate(
+                payment.payment_date
+            )}
+            <br>
+            Método:
+            ${safe(
+                payment.payment_method ||
+                "--"
+            )}
+            <br>
+            Estado:
+            ${translateStatus(
+                payment.status
+            )}
+        </div>
+    `).join("")}
 `;
-/* -----------------------------------------------------
-   OPEN REQUESTS
-   ----------------------------------------------------- */
-dashboardHTML += `
-    <div class="portal-section">
+
+}
+
+/* =========================================================
+REQUESTS
+========================================================= */
+
+async function loadRequests() {
+
+const {
+    data,
+    error
+} = await db
+    .from("requests")
+    .select("*")
+    .eq("client_id", client.id)
+    .in(
+        "status",
+        [
+            "new",
+            "in_progress"
+        ]
+    )
+    .order(
+        "created_at",
+        {
+            ascending: false
+        }
+    );
+if (error) {
+    console.error(
+        "Requests error:",
+        error
+    );
+    return;
+}
+const dashboard =
+    document.querySelector(
+        '[data-content="dashboard"]'
+    );
+if (!dashboard) {
+    return;
+}
+let section =
+    document.getElementById(
+        "openRequests"
+    );
+if (!section) {
+    section =
+        document.createElement("div");
+    section.id =
+        "openRequests";
+    section.className =
+        "portal-section";
+    dashboard.appendChild(
+        section
+    );
+}
+if (!data || data.length === 0) {
+    section.innerHTML = `
         <h2>
             Pedidos em Aberto
         </h2>
-`;
-if (
-    requests &&
-    requests.length
-) {
-    requests.forEach(
-        function (request) {
-            dashboardHTML += `
-                <div class="info-box">
-                    <strong>
-                        ${safe(
-                            request.subject
-                        )}
-                    </strong>
-                    <br>
-                    Código:
-                    ${safe(
-                        request.request_code
-                    )}
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        request.status
-                    )}
-                </div>
-            `;
-        }
-    );
-} else {
-    dashboardHTML += `
         <div class="empty-state">
             Não existem pedidos em aberto.
         </div>
     `;
+    return;
 }
-dashboardHTML += `
-    </div>
+section.innerHTML = `
+    <h2>
+        Pedidos em Aberto
+    </h2>
+    ${data.map(request => `
+        <div class="info-box">
+            <strong>
+                ${safe(
+                    request.subject
+                )}
+            </strong>
+            <br>
+            Código:
+            ${safe(
+                request.request_code
+            )}
+            <br>
+            Prioridade:
+            ${safe(
+                request.priority
+            )}
+            <br>
+            Estado:
+            ${translateStatus(
+                request.status
+            )}
+        </div>
+    `).join("")}
 `;
-/* -----------------------------------------------------
-   INSERT
-   ----------------------------------------------------- */
-const existingCards =
-    dashboard.querySelector(
-        ".portal-cards"
-    );
-if (existingCards) {
-    existingCards.insertAdjacentHTML(
-        "afterend",
-        dashboardHTML
-    );
-} else {
-    dashboard.insertAdjacentHTML(
-        "beforeend",
-        dashboardHTML
-    );
-}
 
 }
 
@@ -631,64 +605,33 @@ const titles = {
     profile:
         "Meu Perfil"
 };
-buttons.forEach(
-    function (button) {
-        button.addEventListener(
-            "click",
-            function () {
-                const target =
-                    button.dataset.page;
-                buttons.forEach(
-                    function (item) {
-                        item.classList.remove(
-                            "active"
-                        );
-                    }
-                );
-                button.classList.add(
-                    "active"
-                );
-                pages.forEach(
-                    function (page) {
-                        page.hidden =
-                            page.dataset.content !==
-                            target;
-                    }
-                );
-                if (pageTitle) {
-                    pageTitle.textContent =
-                        titles[target] ||
-                        "Portal do Cliente";
-                }
-            }
-        );
-    }
-);
-
-}
-
-/* =========================================================
-OTHER PAGE BUTTONS
-========================================================= */
-
-function setupOtherPages() {
-
-const newRequestButton =
-    document.getElementById(
-        "newRequestButton"
-    );
-if (
-    newRequestButton
-) {
-    newRequestButton.addEventListener(
+buttons.forEach(button => {
+    button.addEventListener(
         "click",
-        function () {
-            alert(
-                "A funcionalidade de novo pedido será ligada à tabela requests no próximo passo."
+        () => {
+            const target =
+                button.dataset.page;
+            buttons.forEach(item =>
+                item.classList.remove(
+                    "active"
+                )
             );
+            button.classList.add(
+                "active"
+            );
+            pages.forEach(page => {
+                page.hidden =
+                    page.dataset.content !==
+                    target;
+            });
+            if (pageTitle) {
+                pageTitle.textContent =
+                    titles[target] ||
+                    "Portal do Cliente";
+            }
         }
     );
-}
+});
 
 }
 
@@ -707,11 +650,12 @@ if (!button) {
 }
 button.addEventListener(
     "click",
-    async function () {
-        button.disabled = true;
+    async () => {
+        button.disabled =
+            true;
         button.textContent =
             "A sair...";
-        await supabaseClient.auth.signOut();
+        await db.auth.signOut();
         sessionStorage.clear();
         window.location.replace(
             "./client-login.html"
@@ -725,15 +669,10 @@ button.addEventListener(
 HELPERS
 ========================================================= */
 
-function setText(
-id,
-value
-) {
+function setText(id, value) {
 
 const element =
-    document.getElementById(
-        id
-    );
+    document.getElementById(id);
 if (!element) {
     return;
 }
@@ -746,79 +685,30 @@ element.textContent =
 
 }
 
-function translateStatus(
-status
-) {
-
-const map = {
-    active:
-        "Activo",
-    inactive:
-        "Inactivo",
-    suspended:
-        "Suspenso",
-    scheduled:
-        "Agendada",
-    completed:
-        "Concluída",
-    missed:
-        "Não realizada",
-    cancelled:
-        "Cancelada",
-    pending:
-        "Pendente",
-    paid:
-        "Pago",
-    failed:
-        "Falhou",
-    new:
-        "Novo",
-    in_progress:
-        "Em andamento",
-    resolved:
-        "Resolvido",
-    rejected:
-        "Rejeitado"
-};
-return map[status] ||
-    status ||
-    "--";
-
-}
-
-function date(
-value
-) {
+function formatDate(value) {
 
 if (!value) {
     return "--";
 }
-const d =
+const date =
     new Date(
         value + "T00:00:00"
     );
-if (
-    Number.isNaN(
-        d.getTime()
-    )
-) {
+if (Number.isNaN(date.getTime())) {
     return value;
 }
-return d.toLocaleDateString(
-    "pt-MZ"
+return date.toLocaleDateString(
+    "en-GB"
 );
 
 }
 
-function money(
-amount,
-currency
-) {
+function money(amount, currency) {
 
 return Number(
     amount || 0
 ).toLocaleString(
-    "pt-MZ",
+    "en-US",
     {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -832,9 +722,45 @@ return Number(
 
 }
 
-function safe(
-value
-) {
+function translateStatus(status) {
+
+const map = {
+    active:
+        "Active",
+    inactive:
+        "Inactive",
+    suspended:
+        "Suspended",
+    scheduled:
+        "Scheduled",
+    completed:
+        "Completed",
+    missed:
+        "Missed",
+    cancelled:
+        "Cancelled",
+    pending:
+        "Pending",
+    paid:
+        "Paid",
+    failed:
+        "Failed",
+    new:
+        "New",
+    in_progress:
+        "In progress",
+    resolved:
+        "Resolved",
+    rejected:
+        "Rejected"
+};
+return map[status] ||
+    status ||
+    "--";
+
+}
+
+function safe(value) {
 
 return String(
     value ?? ""
@@ -859,5 +785,19 @@ return String(
         "'",
         "&#039;"
     );
+
+}
+
+function showError(message) {
+
+const loading =
+    document.getElementById(
+        "portalLoading"
+    );
+if (loading) {
+    loading.hidden = false;
+    loading.textContent =
+        message;
+}
 
 }
