@@ -2,6 +2,7 @@
 
 /* =========================================================
 MOSELI | CLIENT PORTAL
+FINAL MATCHED VERSION
 NO LOADING SCREEN
 ========================================================= */
 
@@ -16,30 +17,23 @@ let currentUser = null;
 let currentClient = null;
 
 /* =========================================================
-INITIALIZE
+START
 ========================================================= */
 
-document.addEventListener(“DOMContentLoaded”, function () {
+document.addEventListener(
+“DOMContentLoaded”,
+function () {
 
-console.log("MOSELI PORTAL JS STARTED");
-/*
- * The portal is visible immediately.
- */
-const content =
-    document.getElementById("portalContent");
-if (content) {
-    content.hidden = false;
-    content.style.display = "";
+    console.log(
+        "MOSELI CLIENT PORTAL STARTED"
+    );
+    initializePortal();
 }
-/*
- * Start authentication.
- */
-initializePortal();
 
-});
+);
 
 /* =========================================================
-AUTHENTICATION
+INITIALIZE
 ========================================================= */
 
 async function initializePortal() {
@@ -47,7 +41,7 @@ async function initializePortal() {
 try {
     if (!window.supabase) {
         console.error(
-            "Supabase library not available."
+            "Supabase library not loaded."
         );
         return;
     }
@@ -70,7 +64,7 @@ try {
         await supabaseClient.auth.getSession();
     if (error) {
         console.error(
-            "Authentication error:",
+            "Session error:",
             error
         );
         return;
@@ -80,16 +74,24 @@ try {
         !data.session ||
         !data.session.user
     ) {
-        window.location.href =
-            "./client-login.html";
+        window.location.replace(
+            "./client-login.html"
+        );
         return;
     }
     currentUser =
         data.session.user;
+    console.log(
+        "Authenticated:",
+        currentUser.id
+    );
     /*
-     * Find client.
+     * Find matching client.
      */
-    const result =
+    const {
+        data: clientData,
+        error: clientError
+    } =
         await supabaseClient
             .from("clients")
             .select("*")
@@ -98,26 +100,27 @@ try {
                 currentUser.id
             )
             .maybeSingle();
-    if (result.error) {
+    if (clientError) {
         console.error(
-            "Client lookup error:",
-            result.error
+            "Client query error:",
+            clientError
         );
         return;
     }
-    if (!result.data) {
+    if (!clientData) {
         console.error(
-            "No client linked to this account."
+            "No client found for Auth user."
         );
         await supabaseClient.auth.signOut();
-        window.location.href =
-            "./client-login.html";
+        window.location.replace(
+            "./client-login.html"
+        );
         return;
     }
     currentClient =
-        result.data;
+        clientData;
     /*
-     * Check account status.
+     * Account status.
      */
     if (
         String(
@@ -125,15 +128,16 @@ try {
         ).toLowerCase() !== "active"
     ) {
         console.error(
-            "Client account is not active."
+            "Client account inactive."
         );
         await supabaseClient.auth.signOut();
-        window.location.href =
-            "./client-login.html";
+        window.location.replace(
+            "./client-login.html"
+        );
         return;
     }
     /*
-     * Store client information.
+     * Store identifiers.
      */
     sessionStorage.setItem(
         "moseli_client_id",
@@ -144,31 +148,28 @@ try {
         currentClient.client_code
     );
     /*
-     * Populate dashboard.
+     * Display client.
      */
-    populateClient(
-        currentClient,
-        currentUser
-    );
+    populateClient();
     /*
-     * Activate portal functions.
+     * Activate interface.
      */
     setupNavigation();
     setupLogout();
-    setupRequestButton();
+    setupNewRequest();
     /*
-     * Load database sections.
+     * Load portal data.
      */
-    loadService();
+    loadSubscription();
     loadCollections();
     loadPayments();
     loadRequests();
     console.log(
-        "MOSELI PORTAL AUTHENTICATED"
+        "MOSELI CLIENT PORTAL READY"
     );
 } catch (error) {
     console.error(
-        "MOSELI PORTAL ERROR:",
+        "MOSELI ERROR:",
         error
     );
 }
@@ -176,59 +177,69 @@ try {
 }
 
 /* =========================================================
-CLIENT DATA
+CLIENT
 ========================================================= */
 
-function populateClient(
-client,
-user
-) {
+function populateClient() {
 
 setText(
     "userName",
-    client.full_name
+    currentClient.full_name
 );
 setText(
     "welcomeName",
-    client.full_name
+    currentClient.full_name
 );
 setText(
     "userCode",
-    client.client_code
+    currentClient.client_code
 );
 setText(
     "dashboardClientCode",
-    client.client_code
+    currentClient.client_code
 );
 setText(
     "dashboardStatus",
-    translateStatus(
-        client.status
+    statusText(
+        currentClient.status
     )
 );
 setText(
     "profileName",
-    client.full_name
+    currentClient.full_name
 );
 setText(
     "profileEmail",
-    client.email ||
-    user.email ||
-    "--"
+    currentClient.email ||
+    currentUser.email
 );
 setText(
     "profileCode",
-    client.client_code
+    currentClient.client_code
 );
 setText(
     "profileStatus",
-    translateStatus(
-        client.status
-    )   
+    statusText(
+        currentClient.status
+    )
+);
+setText(
+    "profilePhone",
+    currentClient.phone
+);
+setText(
+    "profileAddress",
+    [
+        currentClient.address,
+        currentClient.bairro,
+        currentClient.city
+    ]
+    .filter(Boolean)
+    .join(", ")
 );
 const initial =
-    client.full_name
-        ? client.full_name
+    currentClient.full_name
+        ? currentClient.full_name
             .trim()
             .charAt(0)
             .toUpperCase()
@@ -274,10 +285,10 @@ const titles = {
 };
 buttons.forEach(
     function (button) {
-        button.type = "button";
-        button.onclick =
+        button.addEventListener(
+            "click",
             function () {
-                const target =
+                const page =
                     button.dataset.page;
                 buttons.forEach(
                     function (item) {
@@ -290,18 +301,19 @@ buttons.forEach(
                     "active"
                 );
                 pages.forEach(
-                    function (page) {
-                        page.hidden =
-                            page.dataset.content !==
-                            target;
+                    function (item) {
+                        item.hidden =
+                            item.dataset.content !==
+                            page;
                     }
                 );
                 if (title) {
                     title.textContent =
-                        titles[target] ||
+                        titles[page] ||
                         "Portal do Cliente";
                 }
-            };
+            }
+        );
     }
 );
 
@@ -320,41 +332,40 @@ const button =
 if (!button) {
     return;
 }
-button.type = "button";
-button.onclick =
+button.addEventListener(
+    "click",
     async function () {
         button.disabled = true;
         button.textContent =
             "A sair...";
-        if (supabaseClient) {
+        try {
             await supabaseClient.auth.signOut();
+        } catch (error) {
+            console.error(
+                "Logout error:",
+                error
+            );
         }
-        sessionStorage.removeItem(
-            "moseli_client_id"
+        sessionStorage.clear();
+        window.location.replace(
+            "./client-login.html"
         );
-        sessionStorage.removeItem(
-            "moseli_client_code"
-        );
-        window.location.href =
-            "./client-login.html";
-    };
+    }
+);
 
 }
 
 /* =========================================================
-SERVICE
+SUBSCRIPTION
 ========================================================= */
 
-async function loadService() {
+async function loadSubscription() {
 
-if (!currentClient) {
-    return;
-}
-const box =
+const container =
     document.getElementById(
         "serviceInfo"
     );
-if (!box) {
+if (!container) {
     return;
 }
 try {
@@ -376,44 +387,43 @@ try {
                 }
             );
     if (error) {
-        console.error(
-            "Subscriptions:",
-            error
-        );
-        box.textContent =
-            "Não existem informações de serviço disponíveis.";
-        return;
+        throw error;
     }
     if (!data || !data.length) {
-        box.textContent =
-            "Ainda não existem serviços registados.";
+        container.innerHTML =
+            "<p>Não existem serviços registados.</p>";
         return;
     }
-    box.innerHTML =
+    container.innerHTML =
         data.map(
             function (item) {
                 return `
                     <div class="info-box">
                         <strong>
-                            ${escapeHTML(
+                            ${safe(
                                 item.plan_name
                             )}
                         </strong>
                         <br><br>
                         Frequência:
-                        ${escapeHTML(
+                        ${safe(
                             item.frequency
                         )}
                         <br>
                         Preço:
-                        ${formatMoney(
+                        ${money(
                             item.price,
                             item.currency
                         )}
                         <br>
                         Estado:
-                        ${translateStatus(
+                        ${statusText(
                             item.status
+                        )}
+                        <br>
+                        Início:
+                        ${date(
+                            item.start_date
                         )}
                     </div>
                 `;
@@ -421,9 +431,11 @@ try {
         ).join("");
 } catch (error) {
     console.error(
-        "Service error:",
+        "Subscription error:",
         error
     );
+    container.innerHTML =
+        "<p>Não foi possível consultar o serviço.</p>";
 }
 
 }
@@ -434,21 +446,11 @@ COLLECTIONS
 
 async function loadCollections() {
 
-if (!currentClient) {
-    return;
-}
-const page =
-    document.querySelector(
-        '[data-content="collections"]'
+const container =
+    document.getElementById(
+        "collectionsList"
     );
-if (!page) {
-    return;
-}
-const section =
-    page.querySelector(
-        ".portal-section"
-    );
-if (!section) {
+if (!container) {
     return;
 }
 try {
@@ -470,65 +472,71 @@ try {
                 }
             );
     if (error) {
-        console.error(
-            "Collections:",
-            error
-        );
-        return;
+        throw error;
     }
-    const empty =
-        section.querySelector(
-            ".empty-state"
-        );
-    if (empty) {
-        empty.remove();
-    }
-    const list =
-        document.createElement(
-            "div"
-        );
-    list.className =
-        "collections-list";
     if (!data || !data.length) {
-        list.innerHTML =
+        container.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem recolhas disponíveis." +
             "</div>";
-    } else {
-        list.innerHTML =
-            data.map(
-                function (item) {
-                    return `
-                        <div class="info-box">
-                            <strong>
-                                Recolha
-                                ${escapeHTML(
-                                    item.collection_code
-                                )}
-                            </strong>
-                            <br><br>
-                            Data:
-                            ${formatDate(
-                                item.collection_date
-                            )}
-                            <br>
-                            Estado:
-                            ${translateStatus(
-                                item.status
-                            )}
-                        </div>
-                    `;
-                }
-            ).join("");
+        return;
     }
-    section.appendChild(
-        list
-    );
+    container.innerHTML =
+        data.map(
+            function (item) {
+                return `
+                    <div class="info-box">
+                        <strong>
+                            Recolha
+                            ${safe(
+                                item.collection_code
+                            )}
+                        </strong>
+                        <br><br>
+                        Data:
+                        ${date(
+                            item.collection_date
+                        )}
+                        <br>
+                        Estado:
+                        ${statusText(
+                            item.status
+                        )}
+                        ${
+                            item.collection_time
+                                ? `
+                                    <br>
+                                    Hora:
+                                    ${safe(
+                                        item.collection_time
+                                    )}
+                                  `
+                                : ""
+                        }
+                        ${
+                            item.location
+                                ? `
+                                    <br>
+                                    Local:
+                                    ${safe(
+                                        item.location
+                                    )}
+                                  `
+                                : ""
+                        }
+                    </div>
+                `;
+            }
+        ).join("");
 } catch (error) {
     console.error(
         "Collections error:",
         error
     );
+    container.innerHTML =
+        "<div class='empty-state'>" +
+        "Não foi possível consultar as recolhas." +
+        "</div>";
 }
 
 }
@@ -539,21 +547,11 @@ PAYMENTS
 
 async function loadPayments() {
 
-if (!currentClient) {
-    return;
-}
-const page =
-    document.querySelector(
-        '[data-content="payments"]'
+const container =
+    document.getElementById(
+        "paymentsList"
     );
-if (!page) {
-    return;
-}
-const section =
-    page.querySelector(
-        ".portal-section"
-    );
-if (!section) {
+if (!container) {
     return;
 }
 try {
@@ -575,71 +573,66 @@ try {
                 }
             );
     if (error) {
-        console.error(
-            "Payments:",
-            error
-        );
-        return;
+        throw error;
     }
-    const empty =
-        section.querySelector(
-            ".empty-state"
-        );
-    if (empty) {
-        empty.remove();
-    }
-    const list =
-        document.createElement(
-            "div"
-        );
-    list.className =
-        "payments-list";
     if (!data || !data.length) {
-        list.innerHTML =
+        container.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem pagamentos disponíveis." +
             "</div>";
-    } else {
-        list.innerHTML =
-            data.map(
-                function (item) {
-                    return `
-                        <div class="info-box">
-                            <strong>
-                                Pagamento
-                                ${escapeHTML(
-                                    item.payment_code
-                                )}
-                            </strong>
-                            <br><br>
-                            Data:
-                            ${formatDate(
-                                item.payment_date
-                            )}
-                            <br>
-                            Valor:
-                            ${formatMoney(
-                                item.amount,
-                                item.currency
-                            )}
-                            <br>
-                            Estado:
-                            ${translateStatus(
-                                item.status
-                            )}
-                        </div>
-                    `;
-                }
-            ).join("");
+        return;
     }
-    section.appendChild(
-        list
-    );
+    container.innerHTML =
+        data.map(
+            function (item) {
+                return `
+                    <div class="info-box">
+                        <strong>
+                            Pagamento
+                            ${safe(
+                                item.payment_code
+                            )}
+                        </strong>
+                        <br><br>
+                        Data:
+                        ${date(
+                            item.payment_date
+                        )}
+                        <br>
+                        Valor:
+                        ${money(
+                            item.amount,
+                            item.currency
+                        )}
+                        <br>
+                        Estado:
+                        ${statusText(
+                            item.status
+                        )}
+                        ${
+                            item.payment_method
+                                ? `
+                                    <br>
+                                    Método:
+                                    ${safe(
+                                        item.payment_method
+                                    )}
+                                  `
+                                : ""
+                        }
+                    </div>
+                `;
+            }
+        ).join("");
 } catch (error) {
     console.error(
         "Payments error:",
         error
     );
+    container.innerHTML =
+        "<div class='empty-state'>" +
+        "Não foi possível consultar os pagamentos." +
+        "</div>";
 }
 
 }
@@ -650,21 +643,11 @@ REQUESTS
 
 async function loadRequests() {
 
-if (!currentClient) {
-    return;
-}
-const page =
-    document.querySelector(
-        '[data-content="requests"]'
+const container =
+    document.getElementById(
+        "requestsList"
     );
-if (!page) {
-    return;
-}
-const section =
-    page.querySelector(
-        ".portal-section"
-    );
-if (!section) {
+if (!container) {
     return;
 }
 try {
@@ -686,61 +669,68 @@ try {
                 }
             );
     if (error) {
-        console.error(
-            "Requests:",
-            error
-        );
-        return;
+        throw error;
     }
-    const list =
-        document.createElement(
-            "div"
-        );
-    list.className =
-        "requests-list";
     if (!data || !data.length) {
-        list.innerHTML =
+        container.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem pedidos." +
             "</div>";
-    } else {
-        list.innerHTML =
-            data.map(
-                function (item) {
-                    return `
-                        <div class="info-box">
-                            <strong>
-                                ${escapeHTML(
-                                    item.subject
-                                )}
-                            </strong>
-                            <br><br>
-                            Código:
-                            ${escapeHTML(
-                                item.request_code
-                            )}
-                            <br>
-                            Estado:
-                            ${translateStatus(
-                                item.status
-                            )}
-                            <br><br>
-                            ${escapeHTML(
-                                item.description
-                            )}
-                        </div>
-                    `;
-                }
-            ).join("");
+        return;
     }
-    section.appendChild(
-        list
-    );
+    container.innerHTML =
+        data.map(
+            function (item) {
+                return `
+                    <div class="info-box">
+                        <strong>
+                            ${safe(
+                                item.subject
+                            )}
+                        </strong>
+                        <br><br>
+                        Código:
+                        ${safe(
+                            item.request_code
+                        )}
+                        <br>
+                        Estado:
+                        ${statusText(
+                            item.status
+                        )}
+                        <br>
+                        Prioridade:
+                        ${safe(
+                            item.priority
+                        )}
+                        <br><br>
+                        ${safe(
+                            item.description
+                        )}
+                        ${
+                            item.admin_response
+                                ? `
+                                    <br><br>
+                                    Resposta MOSELI:
+                                    ${safe(
+                                        item.admin_response
+                                    )}
+                                  `
+                                : ""
+                        }
+                    </div>
+                `;
+            }
+        ).join("");
 } catch (error) {
     console.error(
         "Requests error:",
         error
     );
+    container.innerHTML =
+        "<div class='empty-state'>" +
+        "Não foi possível consultar os pedidos." +
+        "</div>";
 }
 
 }
@@ -749,22 +739,228 @@ try {
 NEW REQUEST
 ========================================================= */
 
-function setupRequestButton() {
+function setupNewRequest() {
 
 const button =
     document.getElementById(
         "newRequestButton"
     );
-if (!button) {
+const container =
+    document.getElementById(
+        "requestFormContainer"
+    );
+if (!button || !container) {
     return;
 }
-button.type = "button";
-button.onclick =
+button.addEventListener(
+    "click",
     function () {
-        alert(
-            "O formulário de Novo Pedido será aberto aqui."
-        );
-    };
+        if (
+            document.getElementById(
+                "moseliRequestForm"
+            )
+        ) {
+            return;
+        }
+        container.innerHTML = `
+            <form
+                id="moseliRequestForm"
+                class="portal-section"
+            >
+                <h3>
+                    Novo Pedido
+                </h3>
+                <label>
+                    Tipo
+                    <select
+                        id="requestType"
+                        required
+                    >
+                        <option value="general">
+                            Geral
+                        </option>
+                        <option value="complaint">
+                            Reclamação
+                        </option>
+                        <option value="pause">
+                            Pausar serviço
+                        </option>
+                        <option value="resume">
+                            Retomar serviço
+                        </option>
+                        <option value="cancellation">
+                            Cancelamento
+                        </option>
+                        <option value="collection_change">
+                            Alteração de recolha
+                        </option>
+                        <option value="address_change">
+                            Alteração de morada
+                        </option>
+                    </select>
+                </label>
+                <br>
+                <label>
+                    Prioridade
+                    <select
+                        id="requestPriority"
+                        required
+                    >
+                        <option value="normal">
+                            Normal
+                        </option>
+                        <option value="high">
+                            Alta
+                        </option>
+                        <option value="urgent">
+                            Urgente
+                        </option>
+                    </select>
+                </label>
+                <br>
+                <label>
+                    Assunto
+                    <input
+                        id="requestSubject"
+                        type="text"
+                        required
+                    >
+                </label>
+                <br>
+                <label>
+                    Descrição
+                    <textarea
+                        id="requestDescription"
+                        rows="5"
+                        required
+                    ></textarea>
+                </label>
+                <br>
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Enviar Pedido
+                </button>
+                <button
+                    type="button"
+                    id="cancelRequest"
+                >
+                    Cancelar
+                </button>
+                <p
+                    id="requestMessage"
+                ></p>
+            </form>
+        `;
+        document
+            .getElementById(
+                "cancelRequest"
+            )
+            .addEventListener(
+                "click",
+                function () {
+                    container.innerHTML = "";
+                }
+            );
+        document
+            .getElementById(
+                "moseliRequestForm"
+            )
+            .addEventListener(
+                "submit",
+                submitRequest
+            );
+    }
+);
+
+}
+
+/* =========================================================
+SUBMIT REQUEST
+========================================================= */
+
+async function submitRequest(
+event
+) {
+
+event.preventDefault();
+const button =
+    event.target.querySelector(
+        "button[type='submit']"
+    );
+const message =
+    document.getElementById(
+        "requestMessage"
+    );
+button.disabled = true;
+button.textContent =
+    "A enviar...";
+const requestCode =
+    "REQ-" +
+    Date.now();
+try {
+    const {
+        error
+    } =
+        await supabaseClient
+            .from("requests")
+            .insert({
+                request_code:
+                    requestCode,
+                client_id:
+                    currentClient.id,
+                request_type:
+                    document
+                        .getElementById(
+                            "requestType"
+                        )
+                        .value,
+                priority:
+                    document
+                        .getElementById(
+                            "requestPriority"
+                        )
+                        .value,
+                subject:
+                    document
+                        .getElementById(
+                            "requestSubject"
+                        )
+                        .value
+                        .trim(),
+                description:
+                    document
+                        .getElementById(
+                            "requestDescription"
+                        )
+                        .value
+                        .trim(),
+                status:
+                    "new"
+            });
+    if (error) {
+        throw error;
+    }
+    message.textContent =
+        "Pedido enviado com sucesso.";
+    document
+        .getElementById(
+            "moseliRequestForm"
+        )
+        .reset();
+    await loadRequests();
+} catch (error) {
+    console.error(
+        "Request error:",
+        error
+    );
+    message.textContent =
+        "Não foi possível enviar o pedido.";
+}
+button.disabled = false;
+button.textContent =
+    "Enviar Pedido";
 
 }
 
@@ -779,20 +975,22 @@ value
 
 const element =
     document.getElementById(id);
-if (!element) {
-    return;
+if (element) {
+    element.textContent =
+        value === null ||
+        value === undefined ||
+        value === ""
+            ? "--"
+            : value;
 }
-element.textContent =
-    value ||
-    "--";
 
 }
 
-function translateStatus(
+function statusText(
 status
 ) {
 
-const map = {
+const values = {
     active:
         "Activo",
     inactive:
@@ -824,28 +1022,37 @@ const map = {
     approved:
         "Aprovado"
 };
-return map[status] ||
+return values[status] ||
     status ||
     "--";
 
 }
 
-function formatDate(
+function date(
 value
 ) {
 
 if (!value) {
     return "--";
 }
-return new Date(
-    value + "T00:00:00"
-).toLocaleDateString(
+const result =
+    new Date(
+        value + "T00:00:00"
+    );
+if (
+    Number.isNaN(
+        result.getTime()
+    )
+) {
+    return value;
+}
+return result.toLocaleDateString(
     "pt-MZ"
 );
 
 }
 
-function formatMoney(
+function money(
 amount,
 currency
 ) {
@@ -867,7 +1074,7 @@ return Number(
 
 }
 
-function escapeHTML(
+function safe(
 value
 ) {
 
