@@ -2,8 +2,7 @@
 
 /* =========================================================
 MOSELI | CLIENT PORTAL
-FINAL MATCHED VERSION
-NO LOADING SCREEN
+DASHBOARD - LIVE SUPABASE DATA
 ========================================================= */
 
 const SUPABASE_URL =
@@ -20,60 +19,44 @@ let currentClient = null;
 START
 ========================================================= */
 
-document.addEventListener(
-“DOMContentLoaded”,
-function () {
+document.addEventListener(“DOMContentLoaded”, async function () {
 
-    console.log(
-        "MOSELI CLIENT PORTAL STARTED"
-    );
-    initializePortal();
+console.log("MOSELI DASHBOARD START");
+if (!window.supabase) {
+    console.error("Supabase library not loaded.");
+    return;
 }
-
+supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        }
+    }
 );
+await startPortal();
+
+});
 
 /* =========================================================
-INITIALIZE
+START PORTAL
 ========================================================= */
 
-async function initializePortal() {
+async function startPortal() {
 
 try {
-    if (!window.supabase) {
-        console.error(
-            "Supabase library not loaded."
-        );
-        return;
-    }
-    supabaseClient =
-        window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY,
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
-            }
-        );
     const {
         data,
         error
-    } =
-        await supabaseClient.auth.getSession();
+    } = await supabaseClient.auth.getSession();
     if (error) {
-        console.error(
-            "Session error:",
-            error
-        );
+        console.error("Session error:", error);
         return;
     }
-    if (
-        !data ||
-        !data.session ||
-        !data.session.user
-    ) {
+    if (!data.session) {
         window.location.replace(
             "./client-login.html"
         );
@@ -82,14 +65,14 @@ try {
     currentUser =
         data.session.user;
     console.log(
-        "Authenticated:",
+        "Authenticated user:",
         currentUser.id
     );
-    /*
-     * Find matching client.
-     */
+    /* -------------------------------------------------
+       GET CLIENT
+       ------------------------------------------------- */
     const {
-        data: clientData,
+        data: client,
         error: clientError
     } =
         await supabaseClient
@@ -102,14 +85,14 @@ try {
             .maybeSingle();
     if (clientError) {
         console.error(
-            "Client query error:",
+            "Client error:",
             clientError
         );
         return;
     }
-    if (!clientData) {
+    if (!client) {
         console.error(
-            "No client found for Auth user."
+            "No client linked to user."
         );
         await supabaseClient.auth.signOut();
         window.location.replace(
@@ -118,58 +101,54 @@ try {
         return;
     }
     currentClient =
-        clientData;
-    /*
-     * Account status.
-     */
+        client;
     if (
         String(
-            currentClient.status
+            client.status
         ).toLowerCase() !== "active"
     ) {
         console.error(
-            "Client account inactive."
-        );
-        await supabaseClient.auth.signOut();
-        window.location.replace(
-            "./client-login.html"
+            "Client account is not active."
         );
         return;
     }
-    /*
-     * Store identifiers.
-     */
+    /* -------------------------------------------------
+       SAVE CLIENT
+       ------------------------------------------------- */
     sessionStorage.setItem(
         "moseli_client_id",
-        currentClient.id
+        client.id
     );
     sessionStorage.setItem(
         "moseli_client_code",
-        currentClient.client_code
+        client.client_code
     );
-    /*
-     * Display client.
-     */
+    /* -------------------------------------------------
+       DISPLAY CLIENT
+       ------------------------------------------------- */
     populateClient();
-    /*
-     * Activate interface.
-     */
+    /* -------------------------------------------------
+       NAVIGATION
+       ------------------------------------------------- */
     setupNavigation();
+    /* -------------------------------------------------
+       LOGOUT
+       ------------------------------------------------- */
     setupLogout();
-    setupNewRequest();
-    /*
-     * Load portal data.
-     */
-    loadSubscription();
-    loadCollections();
-    loadPayments();
-    loadRequests();
+    /* -------------------------------------------------
+       DASHBOARD
+       ------------------------------------------------- */
+    await loadDashboard();
+    /* -------------------------------------------------
+       OTHER PAGES
+       ------------------------------------------------- */
+    setupOtherPages();
     console.log(
-        "MOSELI CLIENT PORTAL READY"
+        "MOSELI DASHBOARD READY"
     );
 } catch (error) {
     console.error(
-        "MOSELI ERROR:",
+        "MOSELI PORTAL ERROR:",
         error
     );
 }
@@ -177,18 +156,21 @@ try {
 }
 
 /* =========================================================
-CLIENT
+CLIENT INFORMATION
 ========================================================= */
 
 function populateClient() {
 
+const name =
+    currentClient.full_name ||
+    "Cliente";
 setText(
     "userName",
-    currentClient.full_name
+    name
 );
 setText(
     "welcomeName",
-    currentClient.full_name
+    name
 );
 setText(
     "userCode",
@@ -200,18 +182,19 @@ setText(
 );
 setText(
     "dashboardStatus",
-    statusText(
+    translateStatus(
         currentClient.status
     )
 );
 setText(
     "profileName",
-    currentClient.full_name
+    name
 );
 setText(
     "profileEmail",
     currentClient.email ||
-    currentUser.email
+    currentUser.email ||
+    "--"
 );
 setText(
     "profileCode",
@@ -219,7 +202,7 @@ setText(
 );
 setText(
     "profileStatus",
-    statusText(
+    translateStatus(
         currentClient.status
     )
 );
@@ -238,16 +221,381 @@ setText(
     .join(", ")
 );
 const initial =
-    currentClient.full_name
-        ? currentClient.full_name
-            .trim()
-            .charAt(0)
-            .toUpperCase()
-        : "M";
+    name
+        .trim()
+        .charAt(0)
+        .toUpperCase();
 setText(
     "userInitial",
-    initial
+    initial || "M"
 );
+
+}
+
+/* =========================================================
+DASHBOARD
+========================================================= */
+
+async function loadDashboard() {
+
+const dashboard =
+    document.querySelector(
+        '[data-content="dashboard"]'
+    );
+if (!dashboard) {
+    return;
+}
+/* -----------------------------------------------------
+   SERVICE
+   ----------------------------------------------------- */
+const {
+    data: subscriptions,
+    error: subscriptionError
+} =
+    await supabaseClient
+        .from("subscriptions")
+        .select("*")
+        .eq(
+            "client_id",
+            currentClient.id
+        )
+        .eq(
+            "status",
+            "active"
+        )
+        .order(
+            "start_date",
+            {
+                ascending: false
+            }
+        );
+if (subscriptionError) {
+    console.error(
+        "Subscription error:",
+        subscriptionError
+    );
+}
+/* -----------------------------------------------------
+   NEXT COLLECTION
+   ----------------------------------------------------- */
+const today =
+    new Date()
+        .toISOString()
+        .split("T")[0];
+const {
+    data: collections,
+    error: collectionError
+} =
+    await supabaseClient
+        .from("collections")
+        .select("*")
+        .eq(
+            "client_id",
+            currentClient.id
+        )
+        .gte(
+            "collection_date",
+            today
+        )
+        .neq(
+            "status",
+            "cancelled"
+        )
+        .order(
+            "collection_date",
+            {
+                ascending: true
+            }
+        )
+        .limit(1);
+if (collectionError) {
+    console.error(
+        "Collection error:",
+        collectionError
+    );
+}
+/* -----------------------------------------------------
+   PAYMENTS
+   ----------------------------------------------------- */
+const {
+    data: payments,
+    error: paymentError
+} =
+    await supabaseClient
+        .from("payments")
+        .select("*")
+        .eq(
+            "client_id",
+            currentClient.id
+        )
+        .order(
+            "payment_date",
+            {
+                ascending: false
+            }
+        )
+        .limit(5);
+if (paymentError) {
+    console.error(
+        "Payment error:",
+        paymentError
+    );
+}
+/* -----------------------------------------------------
+   REQUESTS
+   ----------------------------------------------------- */
+const {
+    data: requests,
+    error: requestError
+} =
+    await supabaseClient
+        .from("requests")
+        .select("*")
+        .eq(
+            "client_id",
+            currentClient.id
+        )
+        .in(
+            "status",
+            [
+                "new",
+                "in_progress"
+            ]
+        );
+if (requestError) {
+    console.error(
+        "Request error:",
+        requestError
+    );
+}
+/* -----------------------------------------------------
+   BUILD DASHBOARD
+   ----------------------------------------------------- */
+let dashboardHTML = "";
+/* -----------------------------------------------------
+   ACTIVE SERVICE
+   ----------------------------------------------------- */
+if (
+    subscriptions &&
+    subscriptions.length
+) {
+    const service =
+        subscriptions[0];
+    dashboardHTML += `
+        <div class="portal-section">
+            <h2>
+                Meu Serviço
+            </h2>
+            <div class="info-box">
+                <strong>
+                    ${safe(
+                        service.plan_name
+                    )}
+                </strong>
+                <br><br>
+                Frequência:
+                ${safe(
+                    service.frequency
+                )}
+                <br>
+                Valor:
+                ${money(
+                    service.price,
+                    service.currency
+                )}
+                <br>
+                Estado:
+                ${translateStatus(
+                    service.status
+                )}
+            </div>
+        </div>
+    `;
+} else {
+    dashboardHTML += `
+        <div class="portal-section">
+            <h2>
+                Meu Serviço
+            </h2>
+            <div class="empty-state">
+                Não existe um serviço activo
+                registado.
+            </div>
+        </div>
+    `;
+}
+/* -----------------------------------------------------
+   NEXT COLLECTION
+   ----------------------------------------------------- */
+dashboardHTML += `
+    <div class="portal-section">
+        <h2>
+            Próxima Recolha
+        </h2>
+`;
+if (
+    collections &&
+    collections.length
+) {
+    const collection =
+        collections[0];
+    dashboardHTML += `
+        <div class="info-box">
+            <strong>
+                ${date(
+                    collection.collection_date
+                )}
+            </strong>
+            ${
+                collection.collection_time
+                    ? `
+                        <br>
+                        Hora:
+                        ${safe(
+                            collection.collection_time
+                        )}
+                      `
+                    : ""
+            }
+            ${
+                collection.location
+                    ? `
+                        <br>
+                        Local:
+                        ${safe(
+                            collection.location
+                        )}
+                      `
+                    : ""
+            }
+            <br>
+            Estado:
+            ${translateStatus(
+                collection.status
+            )}
+        </div>
+    `;
+} else {
+    dashboardHTML += `
+        <div class="empty-state">
+            Não existem recolhas agendadas.
+        </div>
+    `;
+}
+dashboardHTML += `
+    </div>
+`;
+/* -----------------------------------------------------
+   PAYMENTS
+   ----------------------------------------------------- */
+dashboardHTML += `
+    <div class="portal-section">
+        <h2>
+            Pagamentos Recentes
+        </h2>
+`;
+if (
+    payments &&
+    payments.length
+) {
+    payments.forEach(
+        function (payment) {
+            dashboardHTML += `
+                <div class="info-box">
+                    <strong>
+                        ${money(
+                            payment.amount,
+                            payment.currency
+                        )}
+                    </strong>
+                    <br>
+                    Data:
+                    ${date(
+                        payment.payment_date
+                    )}
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        payment.status
+                    )}
+                </div>
+            `;
+        }
+    );
+} else {
+    dashboardHTML += `
+        <div class="empty-state">
+            Ainda não existem pagamentos.
+        </div>
+    `;
+}
+dashboardHTML += `
+    </div>
+`;
+/* -----------------------------------------------------
+   OPEN REQUESTS
+   ----------------------------------------------------- */
+dashboardHTML += `
+    <div class="portal-section">
+        <h2>
+            Pedidos em Aberto
+        </h2>
+`;
+if (
+    requests &&
+    requests.length
+) {
+    requests.forEach(
+        function (request) {
+            dashboardHTML += `
+                <div class="info-box">
+                    <strong>
+                        ${safe(
+                            request.subject
+                        )}
+                    </strong>
+                    <br>
+                    Código:
+                    ${safe(
+                        request.request_code
+                    )}
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        request.status
+                    )}
+                </div>
+            `;
+        }
+    );
+} else {
+    dashboardHTML += `
+        <div class="empty-state">
+            Não existem pedidos em aberto.
+        </div>
+    `;
+}
+dashboardHTML += `
+    </div>
+`;
+/* -----------------------------------------------------
+   INSERT
+   ----------------------------------------------------- */
+const existingCards =
+    dashboard.querySelector(
+        ".portal-cards"
+    );
+if (existingCards) {
+    existingCards.insertAdjacentHTML(
+        "afterend",
+        dashboardHTML
+    );
+} else {
+    dashboard.insertAdjacentHTML(
+        "beforeend",
+        dashboardHTML
+    );
+}
 
 }
 
@@ -265,7 +613,7 @@ const pages =
     document.querySelectorAll(
         ".portal-page"
     );
-const title =
+const pageTitle =
     document.getElementById(
         "pageTitle"
     );
@@ -288,7 +636,7 @@ buttons.forEach(
         button.addEventListener(
             "click",
             function () {
-                const page =
+                const target =
                     button.dataset.page;
                 buttons.forEach(
                     function (item) {
@@ -301,21 +649,46 @@ buttons.forEach(
                     "active"
                 );
                 pages.forEach(
-                    function (item) {
-                        item.hidden =
-                            item.dataset.content !==
-                            page;
+                    function (page) {
+                        page.hidden =
+                            page.dataset.content !==
+                            target;
                     }
                 );
-                if (title) {
-                    title.textContent =
-                        titles[page] ||
+                if (pageTitle) {
+                    pageTitle.textContent =
+                        titles[target] ||
                         "Portal do Cliente";
                 }
             }
         );
     }
 );
+
+}
+
+/* =========================================================
+OTHER PAGE BUTTONS
+========================================================= */
+
+function setupOtherPages() {
+
+const newRequestButton =
+    document.getElementById(
+        "newRequestButton"
+    );
+if (
+    newRequestButton
+) {
+    newRequestButton.addEventListener(
+        "click",
+        function () {
+            alert(
+                "A funcionalidade de novo pedido será ligada à tabela requests no próximo passo."
+            );
+        }
+    );
+}
 
 }
 
@@ -338,629 +711,13 @@ button.addEventListener(
         button.disabled = true;
         button.textContent =
             "A sair...";
-        try {
-            await supabaseClient.auth.signOut();
-        } catch (error) {
-            console.error(
-                "Logout error:",
-                error
-            );
-        }
+        await supabaseClient.auth.signOut();
         sessionStorage.clear();
         window.location.replace(
             "./client-login.html"
         );
     }
 );
-
-}
-
-/* =========================================================
-SUBSCRIPTION
-========================================================= */
-
-async function loadSubscription() {
-
-const container =
-    document.getElementById(
-        "serviceInfo"
-    );
-if (!container) {
-    return;
-}
-try {
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("subscriptions")
-            .select("*")
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "start_date",
-                {
-                    ascending: false
-                }
-            );
-    if (error) {
-        throw error;
-    }
-    if (!data || !data.length) {
-        container.innerHTML =
-            "<p>Não existem serviços registados.</p>";
-        return;
-    }
-    container.innerHTML =
-        data.map(
-            function (item) {
-                return `
-                    <div class="info-box">
-                        <strong>
-                            ${safe(
-                                item.plan_name
-                            )}
-                        </strong>
-                        <br><br>
-                        Frequência:
-                        ${safe(
-                            item.frequency
-                        )}
-                        <br>
-                        Preço:
-                        ${money(
-                            item.price,
-                            item.currency
-                        )}
-                        <br>
-                        Estado:
-                        ${statusText(
-                            item.status
-                        )}
-                        <br>
-                        Início:
-                        ${date(
-                            item.start_date
-                        )}
-                    </div>
-                `;
-            }
-        ).join("");
-} catch (error) {
-    console.error(
-        "Subscription error:",
-        error
-    );
-    container.innerHTML =
-        "<p>Não foi possível consultar o serviço.</p>";
-}
-
-}
-
-/* =========================================================
-COLLECTIONS
-========================================================= */
-
-async function loadCollections() {
-
-const container =
-    document.getElementById(
-        "collectionsList"
-    );
-if (!container) {
-    return;
-}
-try {
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("collections")
-            .select("*")
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "collection_date",
-                {
-                    ascending: false
-                }
-            );
-    if (error) {
-        throw error;
-    }
-    if (!data || !data.length) {
-        container.innerHTML =
-            "<div class='empty-state'>" +
-            "Ainda não existem recolhas disponíveis." +
-            "</div>";
-        return;
-    }
-    container.innerHTML =
-        data.map(
-            function (item) {
-                return `
-                    <div class="info-box">
-                        <strong>
-                            Recolha
-                            ${safe(
-                                item.collection_code
-                            )}
-                        </strong>
-                        <br><br>
-                        Data:
-                        ${date(
-                            item.collection_date
-                        )}
-                        <br>
-                        Estado:
-                        ${statusText(
-                            item.status
-                        )}
-                        ${
-                            item.collection_time
-                                ? `
-                                    <br>
-                                    Hora:
-                                    ${safe(
-                                        item.collection_time
-                                    )}
-                                  `
-                                : ""
-                        }
-                        ${
-                            item.location
-                                ? `
-                                    <br>
-                                    Local:
-                                    ${safe(
-                                        item.location
-                                    )}
-                                  `
-                                : ""
-                        }
-                    </div>
-                `;
-            }
-        ).join("");
-} catch (error) {
-    console.error(
-        "Collections error:",
-        error
-    );
-    container.innerHTML =
-        "<div class='empty-state'>" +
-        "Não foi possível consultar as recolhas." +
-        "</div>";
-}
-
-}
-
-/* =========================================================
-PAYMENTS
-========================================================= */
-
-async function loadPayments() {
-
-const container =
-    document.getElementById(
-        "paymentsList"
-    );
-if (!container) {
-    return;
-}
-try {
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("payments")
-            .select("*")
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "payment_date",
-                {
-                    ascending: false
-                }
-            );
-    if (error) {
-        throw error;
-    }
-    if (!data || !data.length) {
-        container.innerHTML =
-            "<div class='empty-state'>" +
-            "Ainda não existem pagamentos disponíveis." +
-            "</div>";
-        return;
-    }
-    container.innerHTML =
-        data.map(
-            function (item) {
-                return `
-                    <div class="info-box">
-                        <strong>
-                            Pagamento
-                            ${safe(
-                                item.payment_code
-                            )}
-                        </strong>
-                        <br><br>
-                        Data:
-                        ${date(
-                            item.payment_date
-                        )}
-                        <br>
-                        Valor:
-                        ${money(
-                            item.amount,
-                            item.currency
-                        )}
-                        <br>
-                        Estado:
-                        ${statusText(
-                            item.status
-                        )}
-                        ${
-                            item.payment_method
-                                ? `
-                                    <br>
-                                    Método:
-                                    ${safe(
-                                        item.payment_method
-                                    )}
-                                  `
-                                : ""
-                        }
-                    </div>
-                `;
-            }
-        ).join("");
-} catch (error) {
-    console.error(
-        "Payments error:",
-        error
-    );
-    container.innerHTML =
-        "<div class='empty-state'>" +
-        "Não foi possível consultar os pagamentos." +
-        "</div>";
-}
-
-}
-
-/* =========================================================
-REQUESTS
-========================================================= */
-
-async function loadRequests() {
-
-const container =
-    document.getElementById(
-        "requestsList"
-    );
-if (!container) {
-    return;
-}
-try {
-    const {
-        data,
-        error
-    } =
-        await supabaseClient
-            .from("requests")
-            .select("*")
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-    if (error) {
-        throw error;
-    }
-    if (!data || !data.length) {
-        container.innerHTML =
-            "<div class='empty-state'>" +
-            "Ainda não existem pedidos." +
-            "</div>";
-        return;
-    }
-    container.innerHTML =
-        data.map(
-            function (item) {
-                return `
-                    <div class="info-box">
-                        <strong>
-                            ${safe(
-                                item.subject
-                            )}
-                        </strong>
-                        <br><br>
-                        Código:
-                        ${safe(
-                            item.request_code
-                        )}
-                        <br>
-                        Estado:
-                        ${statusText(
-                            item.status
-                        )}
-                        <br>
-                        Prioridade:
-                        ${safe(
-                            item.priority
-                        )}
-                        <br><br>
-                        ${safe(
-                            item.description
-                        )}
-                        ${
-                            item.admin_response
-                                ? `
-                                    <br><br>
-                                    Resposta MOSELI:
-                                    ${safe(
-                                        item.admin_response
-                                    )}
-                                  `
-                                : ""
-                        }
-                    </div>
-                `;
-            }
-        ).join("");
-} catch (error) {
-    console.error(
-        "Requests error:",
-        error
-    );
-    container.innerHTML =
-        "<div class='empty-state'>" +
-        "Não foi possível consultar os pedidos." +
-        "</div>";
-}
-
-}
-
-/* =========================================================
-NEW REQUEST
-========================================================= */
-
-function setupNewRequest() {
-
-const button =
-    document.getElementById(
-        "newRequestButton"
-    );
-const container =
-    document.getElementById(
-        "requestFormContainer"
-    );
-if (!button || !container) {
-    return;
-}
-button.addEventListener(
-    "click",
-    function () {
-        if (
-            document.getElementById(
-                "moseliRequestForm"
-            )
-        ) {
-            return;
-        }
-        container.innerHTML = `
-            <form
-                id="moseliRequestForm"
-                class="portal-section"
-            >
-                <h3>
-                    Novo Pedido
-                </h3>
-                <label>
-                    Tipo
-                    <select
-                        id="requestType"
-                        required
-                    >
-                        <option value="general">
-                            Geral
-                        </option>
-                        <option value="complaint">
-                            Reclamação
-                        </option>
-                        <option value="pause">
-                            Pausar serviço
-                        </option>
-                        <option value="resume">
-                            Retomar serviço
-                        </option>
-                        <option value="cancellation">
-                            Cancelamento
-                        </option>
-                        <option value="collection_change">
-                            Alteração de recolha
-                        </option>
-                        <option value="address_change">
-                            Alteração de morada
-                        </option>
-                    </select>
-                </label>
-                <br>
-                <label>
-                    Prioridade
-                    <select
-                        id="requestPriority"
-                        required
-                    >
-                        <option value="normal">
-                            Normal
-                        </option>
-                        <option value="high">
-                            Alta
-                        </option>
-                        <option value="urgent">
-                            Urgente
-                        </option>
-                    </select>
-                </label>
-                <br>
-                <label>
-                    Assunto
-                    <input
-                        id="requestSubject"
-                        type="text"
-                        required
-                    >
-                </label>
-                <br>
-                <label>
-                    Descrição
-                    <textarea
-                        id="requestDescription"
-                        rows="5"
-                        required
-                    ></textarea>
-                </label>
-                <br>
-                <button
-                    type="submit"
-                    class="primary-button"
-                >
-                    Enviar Pedido
-                </button>
-                <button
-                    type="button"
-                    id="cancelRequest"
-                >
-                    Cancelar
-                </button>
-                <p
-                    id="requestMessage"
-                ></p>
-            </form>
-        `;
-        document
-            .getElementById(
-                "cancelRequest"
-            )
-            .addEventListener(
-                "click",
-                function () {
-                    container.innerHTML = "";
-                }
-            );
-        document
-            .getElementById(
-                "moseliRequestForm"
-            )
-            .addEventListener(
-                "submit",
-                submitRequest
-            );
-    }
-);
-
-}
-
-/* =========================================================
-SUBMIT REQUEST
-========================================================= */
-
-async function submitRequest(
-event
-) {
-
-event.preventDefault();
-const button =
-    event.target.querySelector(
-        "button[type='submit']"
-    );
-const message =
-    document.getElementById(
-        "requestMessage"
-    );
-button.disabled = true;
-button.textContent =
-    "A enviar...";
-const requestCode =
-    "REQ-" +
-    Date.now();
-try {
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("requests")
-            .insert({
-                request_code:
-                    requestCode,
-                client_id:
-                    currentClient.id,
-                request_type:
-                    document
-                        .getElementById(
-                            "requestType"
-                        )
-                        .value,
-                priority:
-                    document
-                        .getElementById(
-                            "requestPriority"
-                        )
-                        .value,
-                subject:
-                    document
-                        .getElementById(
-                            "requestSubject"
-                        )
-                        .value
-                        .trim(),
-                description:
-                    document
-                        .getElementById(
-                            "requestDescription"
-                        )
-                        .value
-                        .trim(),
-                status:
-                    "new"
-            });
-    if (error) {
-        throw error;
-    }
-    message.textContent =
-        "Pedido enviado com sucesso.";
-    document
-        .getElementById(
-            "moseliRequestForm"
-        )
-        .reset();
-    await loadRequests();
-} catch (error) {
-    console.error(
-        "Request error:",
-        error
-    );
-    message.textContent =
-        "Não foi possível enviar o pedido.";
-}
-button.disabled = false;
-button.textContent =
-    "Enviar Pedido";
 
 }
 
@@ -974,23 +731,26 @@ value
 ) {
 
 const element =
-    document.getElementById(id);
-if (element) {
-    element.textContent =
-        value === null ||
-        value === undefined ||
-        value === ""
-            ? "--"
-            : value;
+    document.getElementById(
+        id
+    );
+if (!element) {
+    return;
 }
+element.textContent =
+    value === null ||
+    value === undefined ||
+    value === ""
+        ? "--"
+        : value;
 
 }
 
-function statusText(
+function translateStatus(
 status
 ) {
 
-const values = {
+const map = {
     active:
         "Activo",
     inactive:
@@ -1018,11 +778,9 @@ const values = {
     resolved:
         "Resolvido",
     rejected:
-        "Rejeitado",
-    approved:
-        "Aprovado"
+        "Rejeitado"
 };
-return values[status] ||
+return map[status] ||
     status ||
     "--";
 
@@ -1035,18 +793,18 @@ value
 if (!value) {
     return "--";
 }
-const result =
+const d =
     new Date(
         value + "T00:00:00"
     );
 if (
     Number.isNaN(
-        result.getTime()
+        d.getTime()
     )
 ) {
     return value;
 }
-return result.toLocaleDateString(
+return d.toLocaleDateString(
     "pt-MZ"
 );
 
