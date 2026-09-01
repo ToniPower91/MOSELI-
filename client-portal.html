@@ -494,13 +494,34 @@
     </section>
 </main>
 </div>
-<!-- =====================================================
-     SUPABASE
-     ===================================================== -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var diagnostic = document.createElement("div");
+
+    diagnostic.id = "moseliDiagnostic";
+
+    diagnostic.style.cssText =
+        "position:fixed;" +
+        "top:0;" +
+        "left:0;" +
+        "right:0;" +
+        "z-index:99999;" +
+        "padding:15px;" +
+        "background:#111827;" +
+        "color:white;" +
+        "font-family:Arial,sans-serif;" +
+        "font-size:14px;" +
+        "text-align:center;";
+
+    diagnostic.textContent =
+        "MOSELI HTML JavaScript loader: OK";
+
+    document.body.appendChild(diagnostic);
+});
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- =====================================================
-     PORTAL JS
-     ===================================================== -->
-<script src="./client-portal.js"></script>
+
+<script src="./client-portal.js?v=20260901"></script>
+    
 </body>
 </html>
