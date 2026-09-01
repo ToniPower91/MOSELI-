@@ -157,7 +157,59 @@ try {
     /* =================================================
        LOGOUT
        ================================================= */
-    setupLogout();
+    function setupLogout() {
+
+    const button = document.getElementById("logoutButton");
+
+    if (!button) {
+        console.error("MOSELI: logoutButton not found");
+        return;
+    }
+
+    console.log("MOSELI: logout button connected");
+
+    button.onclick = async function (event) {
+
+        event.preventDefault();
+
+        console.log("MOSELI: logout clicked");
+
+        button.disabled = true;
+        button.textContent = "A sair...";
+
+        try {
+
+            const { error } = await db.auth.signOut();
+
+            if (error) {
+                console.error("MOSELI logout error:", error);
+                throw error;
+            }
+
+            console.log("MOSELI: Supabase session ended");
+
+        } catch (error) {
+
+            console.error("MOSELI: logout failed:", error);
+
+            button.disabled = false;
+            button.textContent = "Sair";
+
+            alert(
+                "Não foi possível terminar a sessão. Tente novamente."
+            );
+
+            return;
+        }
+
+        sessionStorage.removeItem("moseli_client_id");
+        sessionStorage.removeItem("moseli_client_code");
+
+        window.location.href =
+            "./client-login.html";
+
+    };
+}
     /* =================================================
        NEW REQUEST
        ================================================= */
