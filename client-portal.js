@@ -2,7 +2,7 @@
 
 /* =========================================================
 MOSELI | CLIENT PORTAL
-FINAL PRODUCTION VERSION
+NO LOADING SCREEN
 ========================================================= */
 
 const SUPABASE_URL =
@@ -11,154 +11,178 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 “sb_publishable_lryWHU1aV0782oIFi4JKKg_Y4qugSlt”;
 
-let db = null;
-let authUser = null;
-let client = null;
+let supabaseClient = null;
+let currentUser = null;
+let currentClient = null;
 
 /* =========================================================
-START
+INITIALIZE
 ========================================================= */
 
-document.addEventListener(“DOMContentLoaded”, async () => {
+document.addEventListener(“DOMContentLoaded”, function () {
 
-console.log("MOSELI PORTAL START");
+console.log("MOSELI PORTAL JS STARTED");
+/*
+ * The portal is visible immediately.
+ */
+const content =
+    document.getElementById("portalContent");
+if (content) {
+    content.hidden = false;
+    content.style.display = "";
+}
+/*
+ * Start authentication.
+ */
+initializePortal();
+
+});
+
+/* =========================================================
+AUTHENTICATION
+========================================================= */
+
+async function initializePortal() {
+
 try {
     if (!window.supabase) {
-        throw new Error(
-            "Supabase não foi carregado."
+        console.error(
+            "Supabase library not available."
         );
+        return;
     }
-    db = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY,
-        {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
+    supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY,
+            {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
             }
-        }
-    );
-    /*
-     * Get authenticated session
-     */
+        );
     const {
         data,
         error
-    } = await db.auth.getSession();
+    } =
+        await supabaseClient.auth.getSession();
     if (error) {
-        throw error;
-    }
-    if (!data.session) {
-        window.location.href =
-            "./client-login.html";
-        return;
-    }
-    authUser =
-        data.session.user;
-    /*
-     * Find client
-     */
-    const result =
-        await db
-            .from("clients")
-            .select(`
-                id,
-                auth_user_id,
-                client_code,
-                full_name,
-                business_name,
-                email,
-                phone,
-                address,
-                bairro,
-                city,
-                service_location,
-                status
-            `)
-            .eq(
-                "auth_user_id",
-                authUser.id
-            )
-            .maybeSingle();
-    if (result.error) {
-        throw result.error;
-    }
-    if (!result.data) {
-        await db.auth.signOut();
-        window.location.href =
-            "./client-login.html";
-        return;
-    }
-    client =
-        result.data;
-    /*
-     * Client must be active
-     */
-    if (
-        String(client.status).toLowerCase()
-        !== "active"
-    ) {
-        await db.auth.signOut();
-        showError(
-            "A sua conta de cliente não está ativa."
+        console.error(
+            "Authentication error:",
+            error
         );
         return;
     }
+    if (
+        !data ||
+        !data.session ||
+        !data.session.user
+    ) {
+        window.location.href =
+            "./client-login.html";
+        return;
+    }
+    currentUser =
+        data.session.user;
     /*
-     * Save client locally
+     * Find client.
+     */
+    const result =
+        await supabaseClient
+            .from("clients")
+            .select("*")
+            .eq(
+                "auth_user_id",
+                currentUser.id
+            )
+            .maybeSingle();
+    if (result.error) {
+        console.error(
+            "Client lookup error:",
+            result.error
+        );
+        return;
+    }
+    if (!result.data) {
+        console.error(
+            "No client linked to this account."
+        );
+        await supabaseClient.auth.signOut();
+        window.location.href =
+            "./client-login.html";
+        return;
+    }
+    currentClient =
+        result.data;
+    /*
+     * Check account status.
+     */
+    if (
+        String(
+            currentClient.status
+        ).toLowerCase() !== "active"
+    ) {
+        console.error(
+            "Client account is not active."
+        );
+        await supabaseClient.auth.signOut();
+        window.location.href =
+            "./client-login.html";
+        return;
+    }
+    /*
+     * Store client information.
      */
     sessionStorage.setItem(
         "moseli_client_id",
-        client.id
+        currentClient.id
     );
     sessionStorage.setItem(
         "moseli_client_code",
-        client.client_code
+        currentClient.client_code
     );
     /*
-     * Populate dashboard
+     * Populate dashboard.
      */
-    populateClient();
+    populateClient(
+        currentClient,
+        currentUser
+    );
     /*
-     * IMPORTANT:
-     * Show portal NOW.
-     */
-    showPortal();
-    /*
-     * Setup buttons/navigation
+     * Activate portal functions.
      */
     setupNavigation();
     setupLogout();
     setupRequestButton();
     /*
-     * Load secondary data independently.
-     * None of these can block the dashboard.
+     * Load database sections.
      */
     loadService();
     loadCollections();
     loadPayments();
     loadRequests();
     console.log(
-        "MOSELI PORTAL READY"
+        "MOSELI PORTAL AUTHENTICATED"
     );
 } catch (error) {
     console.error(
         "MOSELI PORTAL ERROR:",
         error
     );
-    showError(
-        "Não foi possível carregar o Portal do Cliente."
-    );
 }
 
-});
+}
 
 /* =========================================================
-POPULATE CLIENT
+CLIENT DATA
 ========================================================= */
 
-function populateClient() {
+function populateClient(
+client,
+user
+) {
 
 setText(
     "userName",
@@ -189,7 +213,7 @@ setText(
 setText(
     "profileEmail",
     client.email ||
-    authUser.email ||
+    user.email ||
     "--"
 );
 setText(
@@ -200,25 +224,7 @@ setText(
     "profileStatus",
     translateStatus(
         client.status
-    )
-);
-/*
- * Optional profile fields.
- * These work if added to HTML later.
- */
-setText(
-    "profilePhone",
-    client.phone
-);
-setText(
-    "profileAddress",
-    [
-        client.address,
-        client.bairro,
-        client.city
-    ]
-    .filter(Boolean)
-    .join(", ")
+    )   
 );
 const initial =
     client.full_name
@@ -231,29 +237,6 @@ setText(
     "userInitial",
     initial
 );
-
-}
-
-/* =========================================================
-SHOW PORTAL
-========================================================= */
-
-function showPortal() {
-
-const loading =
-    document.getElementById(
-        "portalLoading"
-    );
-const content =
-    document.getElementById(
-        "portalContent"
-    );
-if (loading) {
-    loading.hidden = true;
-}
-if (content) {
-    content.hidden = false;
-}
 
 }
 
@@ -289,35 +272,38 @@ const titles = {
     profile:
         "Meu Perfil"
 };
-buttons.forEach(button => {
-    button.type = "button";
-    button.addEventListener(
-        "click",
-        () => {
-            const target =
-                button.dataset.page;
-            buttons.forEach(
-                item =>
-                    item.classList.remove(
-                        "active"
-                    )
-            );
-            button.classList.add(
-                "active"
-            );
-            pages.forEach(page => {
-                page.hidden =
-                    page.dataset.content
-                    !== target;
-            });
-            if (title) {
-                title.textContent =
-                    titles[target] ||
-                    "Portal do Cliente";
-            }
-        }
-    );
-});
+buttons.forEach(
+    function (button) {
+        button.type = "button";
+        button.onclick =
+            function () {
+                const target =
+                    button.dataset.page;
+                buttons.forEach(
+                    function (item) {
+                        item.classList.remove(
+                            "active"
+                        );
+                    }
+                );
+                button.classList.add(
+                    "active"
+                );
+                pages.forEach(
+                    function (page) {
+                        page.hidden =
+                            page.dataset.content !==
+                            target;
+                    }
+                );
+                if (title) {
+                    title.textContent =
+                        titles[target] ||
+                        "Portal do Cliente";
+                }
+            };
+    }
+);
 
 }
 
@@ -335,13 +321,14 @@ if (!button) {
     return;
 }
 button.type = "button";
-button.addEventListener(
-    "click",
-    async () => {
+button.onclick =
+    async function () {
         button.disabled = true;
         button.textContent =
             "A sair...";
-        await db.auth.signOut();
+        if (supabaseClient) {
+            await supabaseClient.auth.signOut();
+        }
         sessionStorage.removeItem(
             "moseli_client_id"
         );
@@ -350,8 +337,7 @@ button.addEventListener(
         );
         window.location.href =
             "./client-login.html";
-    }
-);
+    };
 
 }
 
@@ -361,6 +347,9 @@ SERVICE
 
 async function loadService() {
 
+if (!currentClient) {
+    return;
+}
 const box =
     document.getElementById(
         "serviceInfo"
@@ -373,22 +362,12 @@ try {
         data,
         error
     } =
-        await db
+        await supabaseClient
             .from("subscriptions")
-            .select(`
-                id,
-                plan_name,
-                frequency,
-                price,
-                currency,
-                start_date,
-                end_date,
-                status,
-                notes
-            `)
+            .select("*")
             .eq(
                 "client_id",
-                client.id
+                currentClient.id
             )
             .order(
                 "start_date",
@@ -397,64 +376,54 @@ try {
                 }
             );
     if (error) {
-        throw error;
+        console.error(
+            "Subscriptions:",
+            error
+        );
+        box.textContent =
+            "Não existem informações de serviço disponíveis.";
+        return;
     }
     if (!data || !data.length) {
-        box.innerHTML =
-            "Ainda não existem dados de serviço registados.";
+        box.textContent =
+            "Ainda não existem serviços registados.";
         return;
     }
     box.innerHTML =
-        data
-            .map(subscription => `
-                <div class="info-box">
-                    <strong>
+        data.map(
+            function (item) {
+                return `
+                    <div class="info-box">
+                        <strong>
+                            ${escapeHTML(
+                                item.plan_name
+                            )}
+                        </strong>
+                        <br><br>
+                        Frequência:
                         ${escapeHTML(
-                            subscription.plan_name
+                            item.frequency
                         )}
-                    </strong>
-                    <br>
-                    Frequência:
-                    ${escapeHTML(
-                        subscription.frequency
-                    )}
-                    <br>
-                    Preço:
-                    ${formatMoney(
-                        subscription.price,
-                        subscription.currency
-                    )}
-                    <br>
-                    Início:
-                    ${formatDate(
-                        subscription.start_date
-                    )}
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        subscription.status
-                    )}
-                    ${
-                        subscription.end_date
-                            ? `
-                                <br>
-                                Fim:
-                                ${formatDate(
-                                    subscription.end_date
-                                )}
-                              `
-                            : ""
-                    }
-                </div>
-            `)
-            .join("");
+                        <br>
+                        Preço:
+                        ${formatMoney(
+                            item.price,
+                            item.currency
+                        )}
+                        <br>
+                        Estado:
+                        ${translateStatus(
+                            item.status
+                        )}
+                    </div>
+                `;
+            }
+        ).join("");
 } catch (error) {
     console.error(
         "Service error:",
         error
     );
-    box.innerHTML =
-        "Não foi possível carregar os dados do serviço.";
 }
 
 }
@@ -465,6 +434,9 @@ COLLECTIONS
 
 async function loadCollections() {
 
+if (!currentClient) {
+    return;
+}
 const page =
     document.querySelector(
         '[data-content="collections"]'
@@ -484,21 +456,12 @@ try {
         data,
         error
     } =
-        await db
+        await supabaseClient
             .from("collections")
-            .select(`
-                id,
-                collection_code,
-                collection_date,
-                collection_time,
-                frequency,
-                location,
-                status,
-                notes
-            `)
+            .select("*")
             .eq(
                 "client_id",
-                client.id
+                currentClient.id
             )
             .order(
                 "collection_date",
@@ -507,94 +470,60 @@ try {
                 }
             );
     if (error) {
-        throw error;
+        console.error(
+            "Collections:",
+            error
+        );
+        return;
     }
-    const oldEmpty =
+    const empty =
         section.querySelector(
             ".empty-state"
         );
-    if (oldEmpty) {
-        oldEmpty.remove();
+    if (empty) {
+        empty.remove();
     }
-    let list =
-        section.querySelector(
-            ".collections-list"
+    const list =
+        document.createElement(
+            "div"
         );
-    if (!list) {
-        list =
-            document.createElement(
-                "div"
-            );
-        list.className =
-            "collections-list";
-        section.appendChild(
-            list
-        );
-    }
+    list.className =
+        "collections-list";
     if (!data || !data.length) {
         list.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem recolhas disponíveis." +
             "</div>";
-        return;
+    } else {
+        list.innerHTML =
+            data.map(
+                function (item) {
+                    return `
+                        <div class="info-box">
+                            <strong>
+                                Recolha
+                                ${escapeHTML(
+                                    item.collection_code
+                                )}
+                            </strong>
+                            <br><br>
+                            Data:
+                            ${formatDate(
+                                item.collection_date
+                            )}
+                            <br>
+                            Estado:
+                            ${translateStatus(
+                                item.status
+                            )}
+                        </div>
+                    `;
+                }
+            ).join("");
     }
-    list.innerHTML =
-        data
-            .map(item => `
-                <div class="info-box">
-                    <strong>
-                        Recolha
-                        ${escapeHTML(
-                            item.collection_code
-                        )}
-                    </strong>
-                    <br>
-                    Data:
-                    ${formatDate(
-                        item.collection_date
-                    )}
-                    ${
-                        item.collection_time
-                            ? `
-                                <br>
-                                Hora:
-                                ${item.collection_time.substring(
-                                    0,
-                                    5
-                                )}
-                              `
-                            : ""
-                    }
-                    ${
-                        item.frequency
-                            ? `
-                                <br>
-                                Frequência:
-                                ${escapeHTML(
-                                    item.frequency
-                                )}
-                              `
-                            : ""
-                    }
-                    ${
-                        item.location
-                            ? `
-                                <br>
-                                Local:
-                                ${escapeHTML(
-                                    item.location
-                                )}
-                              `
-                            : ""
-                    }
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        item.status
-                    )}
-                </div>
-            `)
-            .join("");
+    section.appendChild(
+        list
+    );
 } catch (error) {
     console.error(
         "Collections error:",
@@ -610,6 +539,9 @@ PAYMENTS
 
 async function loadPayments() {
 
+if (!currentClient) {
+    return;
+}
 const page =
     document.querySelector(
         '[data-content="payments"]'
@@ -629,21 +561,12 @@ try {
         data,
         error
     } =
-        await db
+        await supabaseClient
             .from("payments")
-            .select(`
-                id,
-                payment_code,
-                payment_date,
-                amount,
-                currency,
-                payment_method,
-                status,
-                reference
-            `)
+            .select("*")
             .eq(
                 "client_id",
-                client.id
+                currentClient.id
             )
             .order(
                 "payment_date",
@@ -652,88 +575,66 @@ try {
                 }
             );
     if (error) {
-        throw error;
+        console.error(
+            "Payments:",
+            error
+        );
+        return;
     }
-    const oldEmpty =
+    const empty =
         section.querySelector(
             ".empty-state"
         );
-    if (oldEmpty) {
-        oldEmpty.remove();
+    if (empty) {
+        empty.remove();
     }
-    let list =
-        section.querySelector(
-            ".payments-list"
+    const list =
+        document.createElement(
+            "div"
         );
-    if (!list) {
-        list =
-            document.createElement(
-                "div"
-            );
-        list.className =
-            "payments-list";
-        section.appendChild(
-            list
-        );
-    }
+    list.className =
+        "payments-list";
     if (!data || !data.length) {
         list.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem pagamentos disponíveis." +
             "</div>";
-        return;
+    } else {
+        list.innerHTML =
+            data.map(
+                function (item) {
+                    return `
+                        <div class="info-box">
+                            <strong>
+                                Pagamento
+                                ${escapeHTML(
+                                    item.payment_code
+                                )}
+                            </strong>
+                            <br><br>
+                            Data:
+                            ${formatDate(
+                                item.payment_date
+                            )}
+                            <br>
+                            Valor:
+                            ${formatMoney(
+                                item.amount,
+                                item.currency
+                            )}
+                            <br>
+                            Estado:
+                            ${translateStatus(
+                                item.status
+                            )}
+                        </div>
+                    `;
+                }
+            ).join("");
     }
-    list.innerHTML =
-        data
-            .map(item => `
-                <div class="info-box">
-                    <strong>
-                        Pagamento
-                        ${escapeHTML(
-                            item.payment_code
-                        )}
-                    </strong>
-                    <br>
-                    Data:
-                    ${formatDate(
-                        item.payment_date
-                    )}
-                    <br>
-                    Valor:
-                    ${formatMoney(
-                        item.amount,
-                        item.currency
-                    )}
-                    ${
-                        item.payment_method
-                            ? `
-                                <br>
-                                Método:
-                                ${escapeHTML(
-                                    item.payment_method
-                                )}
-                              `
-                            : ""
-                    }
-                    ${
-                        item.reference
-                            ? `
-                                <br>
-                                Referência:
-                                ${escapeHTML(
-                                    item.reference
-                                )}
-                              `
-                            : ""
-                    }
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        item.status
-                    )}
-                </div>
-            `)
-            .join("");
+    section.appendChild(
+        list
+    );
 } catch (error) {
     console.error(
         "Payments error:",
@@ -749,6 +650,9 @@ REQUESTS
 
 async function loadRequests() {
 
+if (!currentClient) {
+    return;
+}
 const page =
     document.querySelector(
         '[data-content="requests"]'
@@ -756,49 +660,24 @@ const page =
 if (!page) {
     return;
 }
-let list =
-    document.getElementById(
-        "requestsList"
+const section =
+    page.querySelector(
+        ".portal-section"
     );
-if (!list) {
-    list =
-        document.createElement(
-            "div"
-        );
-    list.id =
-        "requestsList";
-    list.className =
-        "requests-list";
-    page
-        .querySelector(
-            ".portal-section"
-        )
-        .appendChild(
-            list
-        );
+if (!section) {
+    return;
 }
 try {
     const {
         data,
         error
     } =
-        await db
+        await supabaseClient
             .from("requests")
-            .select(`
-                id,
-                request_code,
-                request_type,
-                priority,
-                subject,
-                effective_date,
-                description,
-                status,
-                admin_response,
-                created_at
-            `)
+            .select("*")
             .eq(
                 "client_id",
-                client.id
+                currentClient.id
             )
             .order(
                 "created_at",
@@ -807,71 +686,61 @@ try {
                 }
             );
     if (error) {
-        throw error;
+        console.error(
+            "Requests:",
+            error
+        );
+        return;
     }
+    const list =
+        document.createElement(
+            "div"
+        );
+    list.className =
+        "requests-list";
     if (!data || !data.length) {
         list.innerHTML =
             "<div class='empty-state'>" +
             "Ainda não existem pedidos." +
             "</div>";
-        return;
-    }
-    list.innerHTML =
-        data
-            .map(item => `
-                <div class="info-box">
-                    <strong>
-                        ${escapeHTML(
-                            item.subject
-                        )}
-                    </strong>
-                    <br>
-                    Código:
-                    ${escapeHTML(
-                        item.request_code
-                    )}
-                    <br>
-                    Tipo:
-                    ${escapeHTML(
-                        item.request_type
-                    )}
-                    <br>
-                    Prioridade:
-                    ${escapeHTML(
-                        item.priority
-                    )}
-                    <br>
-                    Estado:
-                    ${translateStatus(
-                        item.status
-                    )}
-                    <br>
-                    ${escapeHTML(
-                        item.description
-                    )}
-                    ${
-                        item.admin_response
-                            ? `
-                                <br><br>
-                                Resposta MOSELI:
+    } else {
+        list.innerHTML =
+            data.map(
+                function (item) {
+                    return `
+                        <div class="info-box">
+                            <strong>
                                 ${escapeHTML(
-                                    item.admin_response
+                                    item.subject
                                 )}
-                              `
-                            : ""
-                    }
-                </div>
-            `)
-            .join("");
+                            </strong>
+                            <br><br>
+                            Código:
+                            ${escapeHTML(
+                                item.request_code
+                            )}
+                            <br>
+                            Estado:
+                            ${translateStatus(
+                                item.status
+                            )}
+                            <br><br>
+                            ${escapeHTML(
+                                item.description
+                            )}
+                        </div>
+                    `;
+                }
+            ).join("");
+    }
+    section.appendChild(
+        list
+    );
 } catch (error) {
     console.error(
         "Requests error:",
         error
     );
-    list.innerHTML =
-        "<div class='empty-state'>" +
-        "Não foi possível carregar os pedidos." +
-        "</div>";
 }
 
 }
@@ -890,224 +759,38 @@ if (!button) {
     return;
 }
 button.type = "button";
-button.addEventListener(
-    "click",
-    () => {
-        if (
-            document.getElementById(
-                "moseliRequestForm"
-            )
-        ) {
-            return;
-        }
-        const page =
-            document.querySelector(
-                '[data-content="requests"]'
-            );
-        if (!page) {
-            return;
-        }
-        const form =
-            document.createElement(
-                "form"
-            );
-        form.id =
-            "moseliRequestForm";
-        form.className =
-            "portal-section";
-        form.innerHTML = `
-            <h2>Novo Pedido</h2>
-            <label>
-                Tipo de pedido
-                <select
-                    id="requestType"
-                    required
-                >
-                    <option value="general">
-                        Geral
-                    </option>
-                    <option value="complaint">
-                        Reclamação
-                    </option>
-                    <option value="pause">
-                        Pausa
-                    </option>
-                    <option value="resume">
-                        Retomar serviço
-                    </option>
-                    <option value="cancellation">
-                        Cancelamento
-                    </option>
-                    <option value="collection_change">
-                        Alteração de recolha
-                    </option>
-                    <option value="address_change">
-                        Alteração de morada
-                    </option>
-                </select>
-            </label>
-            <br>
-            <label>
-                Prioridade
-                <select
-                    id="requestPriority"
-                    required
-                >
-                    <option value="normal">
-                        Normal
-                    </option>
-                    <option value="high">
-                        Alta
-                    </option>
-                    <option value="urgent">
-                        Urgente
-                    </option>
-                </select>
-            </label>
-            <br>
-            <label>
-                Assunto
-                <input
-                    id="requestSubject"
-                    type="text"
-                    required
-                >
-            </label>
-            <br>
-            <label>
-                Descrição
-                <textarea
-                    id="requestDescription"
-                    rows="5"
-                    required
-                ></textarea>
-            </label>
-            <br>
-            <button
-                type="submit"
-                class="primary-button"
-            >
-                Enviar Pedido
-            </button>
-            <button
-                type="button"
-                id="cancelRequest"
-            >
-                Cancelar
-            </button>
-            <div
-                id="requestMessage"
-            ></div>
-        `;
-        page.prepend(
-            form
+button.onclick =
+    function () {
+        alert(
+            "O formulário de Novo Pedido será aberto aqui."
         );
-        document
-            .getElementById(
-                "cancelRequest"
-            )
-            .addEventListener(
-                "click",
-                () => form.remove()
-            );
-        form.addEventListener(
-            "submit",
-            submitRequest
-        );
-    }
-);
+    };
 
 }
 
 /* =========================================================
-SUBMIT REQUEST
+HELPERS
 ========================================================= */
 
-async function submitRequest(event) {
+function setText(
+id,
+value
+) {
 
-event.preventDefault();
-const form =
-    event.target;
-const button =
-    form.querySelector(
-        "button[type='submit']"
-    );
-const message =
-    document.getElementById(
-        "requestMessage"
-    );
-button.disabled = true;
-button.textContent =
-    "A enviar...";
-const code =
-    "REQ-" +
-    Date.now();
-try {
-    const {
-        error
-    } =
-        await db
-            .from("requests")
-            .insert({
-                request_code:
-                    code,
-                client_id:
-                    client.id,
-                request_type:
-                    document
-                        .getElementById(
-                            "requestType"
-                        )
-                        .value,
-                priority:
-                    document
-                        .getElementById(
-                            "requestPriority"
-                        )
-                        .value,
-                subject:
-                    document
-                        .getElementById(
-                            "requestSubject"
-                        )
-                        .value
-                        .trim(),
-                description:
-                    document
-                        .getElementById(
-                            "requestDescription"
-                        )
-                        .value
-                        .trim(),
-                status:
-                    "new"
-            });
-    if (error) {
-        throw error;
-    }
-    message.textContent =
-        "Pedido enviado com sucesso.";
-    form.reset();
-    await loadRequests();
-} catch (error) {
-    console.error(
-        "Request submit error:",
-        error
-    );
-    message.textContent =
-        "Erro ao enviar o pedido.";
+const element =
+    document.getElementById(id);
+if (!element) {
+    return;
 }
-button.disabled = false;
-button.textContent =
-    "Enviar Pedido";
+element.textContent =
+    value ||
+    "--";
 
 }
 
-/* =========================================================
-STATUS
-========================================================= */
-
-function translateStatus(status) {
+function translateStatus(
+status
+) {
 
 const map = {
     active:
@@ -1147,35 +830,20 @@ return map[status] ||
 
 }
 
-/* =========================================================
-DATE
-========================================================= */
-
-function formatDate(value) {
+function formatDate(
+value
+) {
 
 if (!value) {
     return "--";
 }
-const date =
-    new Date(
-        value + "T00:00:00"
-    );
-if (
-    Number.isNaN(
-        date.getTime()
-    )
-) {
-    return value;
-}
-return date.toLocaleDateString(
+return new Date(
+    value + "T00:00:00"
+).toLocaleDateString(
     "pt-MZ"
 );
 
 }
-
-/* =========================================================
-MONEY
-========================================================= */
 
 function formatMoney(
 amount,
@@ -1198,62 +866,6 @@ return Number(
 );
 
 }
-
-/* =========================================================
-TEXT
-========================================================= */
-
-function setText(
-id,
-value
-) {
-
-const element =
-    document.getElementById(
-        id
-    );
-if (!element) {
-    return;
-}
-element.textContent =
-    value ||
-    "--";
-
-}
-
-/* =========================================================
-ERROR
-========================================================= */
-
-function showError(
-message
-) {
-
-const loading =
-    document.getElementById(
-        "portalLoading"
-    );
-const content =
-    document.getElementById(
-        "portalContent"
-    );
-if (content) {
-    content.hidden = true;
-}
-if (loading) {
-    loading.hidden = false;
-    loading.innerHTML =
-        "<strong>MOSELI</strong><br><br>" +
-        escapeHTML(
-            message
-        );
-}
-
-}
-
-/* =========================================================
-SECURITY
-========================================================= */
 
 function escapeHTML(
 value
