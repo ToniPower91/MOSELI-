@@ -13,494 +13,352 @@
 <title>MOSELI | Portal do Cliente</title>
 <link
     rel="stylesheet"
-    href="./client-portal.css"
+    href="./client-portal.css?v=20260901"
 >
 </head>
 <body>
-<div id="portalApp" class="portal-app">
-<!-- =====================================================
-     SIDEBAR
-     ===================================================== -->
-<aside class="portal-sidebar">
-    <div class="portal-brand">
-        <div class="portal-logo">M</div>
-        <div>
-            <strong>MOSELI</strong>
-            <span data-i18n="brandSubtitle">
-                Gestão de Resíduos
-            </span>
-        </div>
-    </div>
-    <nav class="portal-navigation">
-        <button
-            type="button"
-            class="portal-nav-item active"
-            data-page="dashboard"
-            data-i18n="navDashboard"
-        >
-            Dashboard
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="service"
-            data-i18n="navService"
-        >
-            Meu Serviço
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="collections"
-            data-i18n="navCollections"
-        >
-            Recolhas
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="payments"
-            data-i18n="navPayments"
-        >
-            Pagamentos
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="requests"
-            data-i18n="navRequests"
-        >
-            Pedidos
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="notifications"
-            data-i18n="navNotifications"
-        >
-            Notificações
-            <span
-                id="notificationBadge"
-                class="notification-badge"
-                hidden
-            >
-                0
-            </span>
-        </button>
-        <button
-            type="button"
-            class="portal-nav-item"
-            data-page="profile"
-            data-i18n="navProfile"
-        >
-            Meu Perfil
-        </button>
-    </nav>
-    <!-- LANGUAGE -->
-    <div class="portal-language">
-        <span data-i18n="languageLabel">
-            Idioma
-        </span>
-        <div class="language-switch">
-            <button
-                type="button"
-                id="languagePT"
-                class="language-button active"
-            >
-                PT
-            </button>
-            <button
-                type="button"
-                id="languageEN"
-                class="language-button"
-            >
-                EN
-            </button>
-        </div>
-    </div>
-    <button
-        type="button"
-        id="logoutButton"
-        class="portal-logout"
-        data-i18n="logout"
-    >
-        Sair
-    </button>
-</aside>
-<!-- =====================================================
-     MAIN
-     ===================================================== -->
-<main class="portal-main">
-    <!-- TOPBAR -->
-    <header class="portal-topbar">
-        <div>
-            <h1 id="pageTitle">
-                Dashboard
-            </h1>
-            <p id="pageSubtitle">
-                Bem-vindo ao Portal do Cliente
-            </p>
-        </div>
-        <div class="portal-user">
-            <div
-                id="userInitial"
-                class="user-avatar"
-            >
+<div
+    id="portalApp"
+    class="portal-app"
+>
+    <!-- SIDEBAR -->
+    <aside class="portal-sidebar">
+        <div class="portal-brand">
+            <div class="portal-logo">
                 M
             </div>
             <div>
-                <strong id="userName">
-                    Cliente
-                </strong>
-                <span id="userCode">
-                    --
+                <strong>MOSELI</strong>
+                <span>
+                    Gestão de Resíduos
                 </span>
             </div>
         </div>
-    </header>
-    <!-- LOADING -->
-    <div
-        id="portalLoading"
-        class="portal-loading"
-    >
-        A carregar o seu portal...
-    </div>
-    <!-- CONTENT -->
-    <section
-        id="portalContent"
-        class="portal-content"
-        hidden
-    >
-        <!-- =================================================
-             DASHBOARD
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="dashboard"
+        <nav class="portal-navigation">
+            <button
+                type="button"
+                class="portal-nav-item active"
+                data-page="dashboard"
+            >
+                Dashboard
+            </button>
+            <button
+                type="button"
+                class="portal-nav-item"
+                data-page="service"
+            >
+                Meu Serviço
+            </button>
+            <button
+                type="button"
+                class="portal-nav-item"
+                data-page="collections"
+            >
+                Recolhas
+            </button>
+            <button
+                type="button"
+                class="portal-nav-item"
+                data-page="payments"
+            >
+                Pagamentos
+            </button>
+            <button
+                type="button"
+                class="portal-nav-item"
+                data-page="requests"
+            >
+                Pedidos
+            </button>
+            <button
+                type="button"
+                class="portal-nav-item"
+                data-page="profile"
+            >
+                Meu Perfil
+            </button>
+        </nav>
+        <button
+            type="button"
+            id="logoutButton"
+            class="portal-logout"
         >
-            <div class="welcome-card">
-                <h2>
-                    Olá,
-                    <span id="welcomeName">
+            Sair
+        </button>
+    </aside>
+    <!-- MAIN -->
+    <main class="portal-main">
+        <header class="portal-topbar">
+            <div>
+                <h1 id="pageTitle">
+                    Dashboard
+                </h1>
+                <p>
+                    Bem-vindo ao Portal do Cliente
+                </p>
+            </div>
+            <div class="portal-user">
+                <div
+                    id="userInitial"
+                    class="user-avatar"
+                >
+                    M
+                </div>
+                <div>
+                    <strong id="userName">
                         Cliente
-                    </span>
-                </h2>
-                <p data-i18n="dashboardWelcome">
-                    Aqui pode consultar os seus serviços,
-                    recolhas, pagamentos e pedidos.
-                </p>
-            </div>
-            <div class="portal-cards">
-                <div class="portal-card">
-                    <span data-i18n="clientCode">
-                        Código do Cliente
-                    </span>
-                    <strong id="dashboardClientCode">
+                    </strong>
+                    <span id="userCode">
                         --
-                    </strong>
-                </div>
-                <div class="portal-card">
-                    <span data-i18n="accountStatus">
-                        Estado da Conta
                     </span>
-                    <strong id="dashboardStatus">
-                        --
-                    </strong>
-                </div>
-                <div class="portal-card">
-                    <span data-i18n="subscription">
-                        Subscrição
-                    </span>
-                    <strong id="dashboardPlan">
-                        --
-                    </strong>
-                </div>
-                <div class="portal-card">
-                    <span data-i18n="nextCollection">
-                        Próxima Recolha
-                    </span>
-                    <strong id="dashboardNextCollection">
-                        --
-                    </strong>
-                </div>
-                <div class="portal-card">
-                    <span data-i18n="paymentStatus">
-                        Estado do Pagamento
-                    </span>
-                    <strong id="dashboardPaymentStatus">
-                        --
-                    </strong>
-                </div>
-                <div class="portal-card">
-                    <span data-i18n="openRequests">
-                        Pedidos em Aberto
-                    </span>
-                    <strong id="dashboardOpenRequests">
-                        0
-                    </strong>
                 </div>
             </div>
-            <!-- ANNOUNCEMENTS -->
-            <div class="portal-section">
-                <div class="section-heading">
-                    <div>
-                        <h2 data-i18n="latestAnnouncements">
-                            Últimos Anúncios
-                        </h2>
-                        <p data-i18n="announcementsDescription">
-                            Informações importantes da MOSELI.
-                        </p>
-                    </div>
-                </div>
-                <div id="dashboardAnnouncements">
-                    <div class="empty-state">
-                        A carregar anúncios...
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- =================================================
-             SERVICE
-             ================================================= -->
+        </header>
+        <!-- LOADING / DIAGNOSTIC -->
         <div
-            class="portal-page"
-            data-content="service"
+            id="portalLoading"
+            class="portal-loading"
+        >
+            A carregar o seu portal...
+        </div>
+        <!-- PORTAL CONTENT -->
+        <section
+            id="portalContent"
+            class="portal-content"
             hidden
         >
-            <div class="portal-section">
-                <h2 data-i18n="serviceTitle">
-                    Meu Serviço
-                </h2>
-                <p data-i18n="serviceDescription">
-                    Informações do seu serviço MOSELI.
-                </p>
-                <div
-                    id="serviceInfo"
-                    class="data-grid"
-                >
-                    <div class="empty-state">
-                        A carregar...
+            <!-- DASHBOARD -->
+            <div
+                class="portal-page"
+                data-content="dashboard"
+            >
+                <div class="welcome-card">
+                    <h2>
+                        Olá,
+                        <span id="welcomeName">
+                            Cliente
+                        </span>
+                    </h2>
+                    <p>
+                        Aqui pode consultar os seus
+                        serviços, recolhas, pagamentos
+                        e pedidos.
+                    </p>
+                </div>
+                <div class="portal-cards">
+                    <div class="portal-card">
+                        <span>
+                            Código do Cliente
+                        </span>
+                        <strong
+                            id="dashboardClientCode"
+                        >
+                            --
+                        </strong>
+                    </div>
+                    <div class="portal-card">
+                        <span>
+                            Estado da Conta
+                        </span>
+                        <strong
+                            id="dashboardStatus"
+                        >
+                            --
+                        </strong>
+                    </div>
+                    <div class="portal-card">
+                        <span>
+                            Serviço
+                        </span>
+                        <strong>
+                            Gestão de Resíduos
+                        </strong>
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- =================================================
-             COLLECTIONS
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="collections"
-            hidden
-        >
-            <div class="portal-section">
-                <h2 data-i18n="collectionsTitle">
-                    Recolhas
-                </h2>
-                <p data-i18n="collectionsDescription">
-                    Histórico e próximas recolhas.
-                </p>
-                <div
-                    id="collectionsList"
-                    class="data-list"
-                >
-                    <div class="empty-state">
-                        A carregar...
+            <!-- SERVICE -->
+            <div
+                class="portal-page"
+                data-content="service"
+                hidden
+            >
+                <div class="portal-section">
+                    <h2>
+                        Meu Serviço
+                    </h2>
+                    <p>
+                        Informações do seu serviço MOSELI.
+                    </p>
+                    <div
+                        id="serviceInfo"
+                        class="info-box"
+                    >
+                        A carregar informações
+                        do serviço...
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- =================================================
-             PAYMENTS
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="payments"
-            hidden
-        >
-            <div class="portal-section">
-                <h2 data-i18n="paymentsTitle">
-                    Pagamentos
-                </h2>
-                <p data-i18n="paymentsDescription">
-                    Consulte os seus pagamentos.
-                </p>
-                <div
-                    id="paymentsList"
-                    class="data-list"
-                >
-                    <div class="empty-state">
-                        A carregar...
+            <!-- COLLECTIONS -->
+            <div
+                class="portal-page"
+                data-content="collections"
+                hidden
+            >
+                <div class="portal-section">
+                    <h2>
+                        Recolhas
+                    </h2>
+                    <p>
+                        Histórico e próximas recolhas.
+                    </p>
+                    <div
+                        id="collectionsList"
+                        class="info-box"
+                    >
+                        A carregar recolhas...
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- =================================================
-             REQUESTS
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="requests"
-            hidden
-        >
-            <div class="portal-section">
-                <div class="section-heading">
-                    <div>
-                        <h2 data-i18n="requestsTitle">
-                            Pedidos
-                        </h2>
-                        <p data-i18n="requestsDescription">
-                            Envie e acompanhe os seus pedidos à MOSELI.
-                        </p>
+            <!-- PAYMENTS -->
+            <div
+                class="portal-page"
+                data-content="payments"
+                hidden
+            >
+                <div class="portal-section">
+                    <h2>
+                        Pagamentos
+                    </h2>
+                    <p>
+                        Consulte os seus pagamentos
+                        e documentos.
+                    </p>
+                    <div
+                        id="paymentsList"
+                        class="info-box"
+                    >
+                        A carregar pagamentos...
                     </div>
+                </div>
+            </div>
+            <!-- REQUESTS -->
+            <div
+                class="portal-page"
+                data-content="requests"
+                hidden
+            >
+                <div class="portal-section">
+                    <h2>
+                        Pedidos
+                    </h2>
+                    <p>
+                        Envie e acompanhe os seus
+                        pedidos à MOSELI.
+                    </p>
                     <button
                         type="button"
                         class="primary-button"
                         id="newRequestButton"
-                        data-i18n="newRequest"
                     >
                         Novo Pedido
                     </button>
-                </div>
-                <div
-                    id="requestsList"
-                    class="data-list"
-                >
-                    <div class="empty-state">
-                        A carregar...
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- =================================================
-             NOTIFICATIONS
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="notifications"
-            hidden
-        >
-            <div class="portal-section">
-                <div class="section-heading">
-                    <div>
-                        <h2 data-i18n="notificationsTitle">
-                            Notificações
-                        </h2>
-                        <p data-i18n="notificationsDescription">
-                            Avisos e atualizações da sua conta.
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        class="secondary-button"
-                        id="markNotificationsRead"
-                        data-i18n="markAllRead"
+                    <div
+                        id="requestsList"
+                        class="info-box"
                     >
-                        Marcar como lidas
-                    </button>
-                </div>
-                <div
-                    id="notificationsList"
-                    class="data-list"
-                >
-                    <div class="empty-state">
-                        A carregar...
+                        A carregar pedidos...
                     </div>
                 </div>
             </div>
-        </div>
-        <!-- =================================================
-             PROFILE
-             ================================================= -->
-        <div
-            class="portal-page"
-            data-content="profile"
-            hidden
-        >
-            <div class="portal-section">
-                <h2 data-i18n="profileTitle">
-                    Meu Perfil
-                </h2>
-                <p data-i18n="profileDescription">
-                    Consulte os seus dados de cliente.
-                </p>
-                <div class="profile-grid">
-                    <div>
-                        <span data-i18n="name">
-                            Nome
-                        </span>
-                        <strong id="profileName">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="business">
-                            Empresa
-                        </span>
-                        <strong id="profileBusiness">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="email">
-                            Email
-                        </span>
-                        <strong id="profileEmail">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="phone">
-                            Telefone
-                        </span>
-                        <strong id="profilePhone">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="clientCode">
-                            Código
-                        </span>
-                        <strong id="profileCode">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="status">
-                            Estado
-                        </span>
-                        <strong id="profileStatus">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="address">
-                            Morada
-                        </span>
-                        <strong id="profileAddress">
-                            --
-                        </strong>
-                    </div>
-                    <div>
-                        <span data-i18n="serviceLocation">
-                            Local do Serviço
-                        </span>
-                        <strong id="profileServiceLocation">
-                            --
-                        </strong>
+            <!-- PROFILE -->
+            <div
+                class="portal-page"
+                data-content="profile"
+                hidden
+            >
+                <div class="portal-section">
+                    <h2>
+                        Meu Perfil
+                    </h2>
+                    <div class="profile-grid">
+                        <div>
+                            <span>
+                                Nome
+                            </span>
+                            <strong
+                                id="profileName"
+                            >
+                                --
+                            </strong>
+                        </div>
+                        <div>
+                            <span>
+                                Email
+                            </span>
+                            <strong
+                                id="profileEmail"
+                            >
+                                --
+                            </strong>
+                        </div>
+                        <div>
+                            <span>
+                                Código
+                            </span>
+                            <strong
+                                id="profileCode"
+                            >
+                                --
+                            </strong>
+                        </div>
+                        <div>
+                            <span>
+                                Estado
+                            </span>
+                            <strong
+                                id="profileStatus"
+                            >
+                                --
+                            </strong>
+                        </div>
+                        <div>
+                            <span>
+                                Telefone
+                            </span>
+                            <strong
+                                id="profilePhone"
+                            >
+                                --
+                            </strong>
+                        </div>
+                        <div>
+                            <span>
+                                Morada
+                            </span>
+                            <strong
+                                id="profileAddress"
+                            >
+                                --
+                            </strong>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-</main>
+        </section>
+    </main>
 </div>
-<script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="./client-portal.js?v=20260901"></script>
-
-</body>
-</html>
-
+<!-- =====================================================
+     SUPABASE
+     ===================================================== -->
+<script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
+<!-- =====================================================
+     MOSELI CLIENT PORTAL JAVASCRIPT
+     Cache-busting parameter is intentional
+     ===================================================== -->
+<script
+    src="./client-portal.js?v=20260901"
+></script>
 </body>
 </html>
