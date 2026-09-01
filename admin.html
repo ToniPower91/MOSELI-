@@ -1,1 +1,1803 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>MOSELI | Admin CRM</title>
+
+  <meta
+    name="description"
+    content="MOSELI Gestão de Resíduos - Painel Administrativo CRM"
+  >
+
+  <link rel="stylesheet" href="./admin.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <!-- =========================================================
+       MOSELI ADMIN CRM
+  ========================================================== -->
+
+  <div class="admin-app" id="adminApp">
+
+    <!-- =======================================================
+         SIDEBAR
+    ======================================================== -->
+
+    <aside class="sidebar" id="sidebar">
+
+      <div class="sidebar-header">
+        <a href="#" class="brand" data-page="dashboard">
+          <div class="brand-mark">M</div>
+
+          <div class="brand-text">
+            <strong>MOSELI</strong>
+            <span>Gestão de Resíduos</span>
+          </div>
+        </a>
+
+        <button
+          type="button"
+          class="sidebar-close"
+          id="sidebarClose"
+          aria-label="Fechar menu"
+        >
+          ×
+        </button>
+      </div>
+
+
+      <div class="admin-profile">
+
+        <div class="admin-avatar" id="adminInitial">
+          A
+        </div>
+
+        <div class="admin-profile-info">
+          <strong id="adminName">Administrador</strong>
+          <span id="adminEmail">A carregar...</span>
+        </div>
+
+      </div>
+
+
+      <nav class="sidebar-nav" aria-label="Menu principal">
+
+        <div class="nav-section-title">
+          PRINCIPAL
+        </div>
+
+        <button
+          type="button"
+          class="nav-item active"
+          data-page="dashboard"
+        >
+          <span class="nav-icon">▦</span>
+          <span>Dashboard</span>
+        </button>
+
+
+        <div class="nav-section-title">
+          GESTÃO
+        </div>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="clients"
+        >
+          <span class="nav-icon">♙</span>
+          <span>Clientes</span>
+          <span class="nav-count" id="clientsNavCount">0</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="subscriptions"
+        >
+          <span class="nav-icon">▤</span>
+          <span>Serviços</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="collections"
+        >
+          <span class="nav-icon">♻</span>
+          <span>Recolhas</span>
+          <span class="nav-count" id="collectionsNavCount">0</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="payments"
+        >
+          <span class="nav-icon">MZN</span>
+          <span>Pagamentos</span>
+          <span class="nav-count" id="paymentsNavCount">0</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="requests"
+        >
+          <span class="nav-icon">?</span>
+          <span>Pedidos</span>
+          <span class="nav-count" id="requestsNavCount">0</span>
+        </button>
+
+
+        <div class="nav-section-title">
+          COMUNICAÇÃO
+        </div>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="notifications"
+        >
+          <span class="nav-icon">♢</span>
+          <span>Notificações</span>
+          <span class="nav-count" id="notificationsNavCount">0</span>
+        </button>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="announcements"
+        >
+          <span class="nav-icon">!</span>
+          <span>Avisos</span>
+        </button>
+
+
+        <div class="nav-section-title">
+          ANÁLISE
+        </div>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="reports"
+        >
+          <span class="nav-icon">▥</span>
+          <span>Relatórios</span>
+        </button>
+
+
+        <div class="nav-section-title">
+          SISTEMA
+        </div>
+
+        <button
+          type="button"
+          class="nav-item"
+          data-page="settings"
+        >
+          <span class="nav-icon">⚙</span>
+          <span>Definições</span>
+        </button>
+
+      </nav>
+
+
+      <div class="sidebar-footer">
+
+        <button
+          type="button"
+          class="logout-button"
+          id="logoutButton"
+        >
+          <span>↪</span>
+          <span>Terminar sessão</span>
+        </button>
+
+      </div>
+
+    </aside>
+
+
+    <!-- =======================================================
+         MAIN
+    ======================================================== -->
+
+    <div class="main-wrapper">
+
+      <!-- =====================================================
+           TOPBAR
+      ====================================================== -->
+
+      <header class="topbar">
+
+        <div class="topbar-left">
+
+          <button
+            type="button"
+            class="mobile-menu-button"
+            id="mobileMenuButton"
+            aria-label="Abrir menu"
+          >
+            ☰
+          </button>
+
+          <div>
+            <div class="breadcrumb">
+              MOSELI / <span id="breadcrumbPage">Dashboard</span>
+            </div>
+
+            <h1 id="pageTitle">
+              Dashboard
+            </h1>
+          </div>
+
+        </div>
+
+
+        <div class="topbar-right">
+
+          <button
+            type="button"
+            class="topbar-icon-button"
+            id="refreshButton"
+            title="Actualizar"
+          >
+            ↻
+          </button>
+
+          <button
+            type="button"
+            class="topbar-icon-button notification-button"
+            data-page="notifications"
+            title="Notificações"
+          >
+            ♢
+            <span
+              class="notification-dot"
+              id="topNotificationDot"
+              hidden
+            ></span>
+          </button>
+
+
+          <div class="topbar-admin">
+
+            <div class="topbar-avatar" id="topAdminInitial">
+              A
+            </div>
+
+            <div class="topbar-admin-info">
+              <strong id="topAdminName">Administrador</strong>
+              <span>Administrador</span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+
+      <!-- =====================================================
+           GLOBAL LOADING
+      ====================================================== -->
+
+      <div
+        class="global-loading"
+        id="globalLoading"
+      >
+        <div class="loading-spinner"></div>
+        <span>A carregar o CRM...</span>
+      </div>
+
+
+      <!-- =====================================================
+           PAGE CONTENT
+      ====================================================== -->
+
+      <main class="page-content" id="adminContent" hidden>
+
+
+        <!-- ===================================================
+             DASHBOARD
+        ==================================================== -->
+
+        <section
+          class="page-section active"
+          id="page-dashboard"
+          data-page-section="dashboard"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">VISÃO GERAL</span>
+
+              <h2>
+                Bem-vindo ao MOSELI CRM
+              </h2>
+
+              <p>
+                Gestão centralizada de clientes, serviços, recolhas e pagamentos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-page="clients"
+            >
+              + Novo cliente
+            </button>
+
+          </div>
+
+
+          <!-- KPI CARDS -->
+
+          <div class="stats-grid">
+
+            <article class="stat-card">
+
+              <div class="stat-card-icon">
+                ♙
+              </div>
+
+              <div class="stat-card-content">
+                <span>Total de clientes</span>
+                <strong id="statTotalClients">0</strong>
+                <small id="statActiveClients">
+                  0 activos
+                </small>
+              </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+              <div class="stat-card-icon">
+                ▤
+              </div>
+
+              <div class="stat-card-content">
+                <span>Serviços activos</span>
+                <strong id="statActiveSubscriptions">0</strong>
+                <small>
+                  Subscrições activas
+                </small>
+              </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+              <div class="stat-card-icon">
+                ♻
+              </div>
+
+              <div class="stat-card-content">
+                <span>Próximas recolhas</span>
+                <strong id="statUpcomingCollections">0</strong>
+                <small>
+                  Agendadas
+                </small>
+              </div>
+
+            </article>
+
+
+            <article class="stat-card">
+
+              <div class="stat-card-icon">
+                MZN
+              </div>
+
+              <div class="stat-card-content">
+                <span>Receita paga</span>
+                <strong id="statRevenue">0 MT</strong>
+                <small id="statRevenuePeriod">
+                  Registos disponíveis
+                </small>
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <!-- SECONDARY KPI -->
+
+          <div class="mini-stats-grid">
+
+            <div class="mini-stat">
+              <span>Pagamentos pendentes</span>
+              <strong id="statPendingPayments">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Pedidos em aberto</span>
+              <strong id="statOpenRequests">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Pedidos de recolha</span>
+              <strong id="statCollectionRequests">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Notificações não lidas</span>
+              <strong id="statUnreadNotifications">0</strong>
+            </div>
+
+          </div>
+
+
+          <!-- DASHBOARD COLUMNS -->
+
+          <div class="dashboard-grid">
+
+
+            <!-- RECENT CLIENTS -->
+
+            <article class="panel">
+
+              <div class="panel-header">
+
+                <div>
+                  <h3>Clientes recentes</h3>
+                  <p>Últimos clientes registados</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="text-button"
+                  data-page="clients"
+                >
+                  Ver todos →
+                </button>
+
+              </div>
+
+              <div
+                class="table-container"
+                id="dashboardClients"
+              >
+                <div class="empty-state">
+                  A carregar clientes...
+                </div>
+              </div>
+
+            </article>
+
+
+            <!-- UPCOMING COLLECTIONS -->
+
+            <article class="panel">
+
+              <div class="panel-header">
+
+                <div>
+                  <h3>Próximas recolhas</h3>
+                  <p>Agenda operacional</p>
+                </div>
+
+                <button
+                  type="button"
+                  class="text-button"
+                  data-page="collections"
+                >
+                  Ver agenda →
+                </button>
+
+              </div>
+
+              <div
+                class="activity-list"
+                id="dashboardCollections"
+              >
+                <div class="empty-state">
+                  A carregar recolhas...
+                </div>
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <!-- RECENT ACTIVITY -->
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Actividade recente</h3>
+                <p>Últimas operações no sistema</p>
+              </div>
+
+            </div>
+
+            <div
+              class="activity-list"
+              id="dashboardActivity"
+            >
+              <div class="empty-state">
+                A carregar actividade...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             CLIENTS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-clients"
+          data-page-section="clients"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">GESTÃO DE CLIENTES</span>
+
+              <h2>
+                Clientes
+              </h2>
+
+              <p>
+                Consulte e faça a gestão dos clientes MOSELI.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newClientButton"
+            >
+              + Novo cliente
+            </button>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="clientSearch"
+                placeholder="Pesquisar por nome, código, telefone ou email..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="clientStatusFilter">
+              <option value="all">Todos os estados</option>
+              <option value="active">Activos</option>
+              <option value="inactive">Inactivos</option>
+              <option value="suspended">Suspensos</option>
+            </select>
+
+            <select id="clientCityFilter">
+              <option value="all">Todas as cidades</option>
+            </select>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Lista de clientes</h3>
+                <p id="clientsResultCount">
+                  0 clientes
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="clientsTable"
+            >
+              <div class="empty-state">
+                A carregar clientes...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             SUBSCRIPTIONS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-subscriptions"
+          data-page-section="subscriptions"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">SERVIÇOS</span>
+
+              <h2>
+                Subscrições e Serviços
+              </h2>
+
+              <p>
+                Faça a gestão dos serviços contratados pelos clientes.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newSubscriptionButton"
+            >
+              + Nova subscrição
+            </button>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="subscriptionSearch"
+                placeholder="Pesquisar cliente ou plano..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="subscriptionStatusFilter">
+              <option value="all">Todos os estados</option>
+              <option value="active">Activos</option>
+              <option value="paused">Pausados</option>
+              <option value="cancelled">Cancelados</option>
+              <option value="expired">Expirados</option>
+            </select>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Serviços contratados</h3>
+                <p id="subscriptionsResultCount">
+                  0 subscrições
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="subscriptionsTable"
+            >
+              <div class="empty-state">
+                A carregar serviços...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             COLLECTIONS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-collections"
+          data-page-section="collections"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">OPERAÇÕES</span>
+
+              <h2>
+                Recolhas
+              </h2>
+
+              <p>
+                Planeie e acompanhe todas as recolhas de resíduos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newCollectionButton"
+            >
+              + Agendar recolha
+            </button>
+
+          </div>
+
+
+          <div class="mini-stats-grid collection-summary">
+
+            <div class="mini-stat">
+              <span>Agendadas</span>
+              <strong id="collectionsScheduledCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Concluídas</span>
+              <strong id="collectionsCompletedCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Em falta</span>
+              <strong id="collectionsMissedCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Canceladas</span>
+              <strong id="collectionsCancelledCount">0</strong>
+            </div>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="collectionSearch"
+                placeholder="Pesquisar código, cliente ou localização..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="collectionStatusFilter">
+              <option value="all">Todos os estados</option>
+              <option value="scheduled">Agendadas</option>
+              <option value="completed">Concluídas</option>
+              <option value="missed">Em falta</option>
+              <option value="cancelled">Canceladas</option>
+            </select>
+
+            <input
+              type="date"
+              id="collectionDateFilter"
+              title="Filtrar por data"
+            >
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Agenda de recolhas</h3>
+                <p id="collectionsResultCount">
+                  0 recolhas
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="collectionsTable"
+            >
+              <div class="empty-state">
+                A carregar recolhas...
+              </div>
+            </div>
+
+          </article>
+
+
+          <!-- COLLECTION REQUESTS -->
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Pedidos de recolha dos clientes</h3>
+                <p>
+                  Solicitações recebidas através do portal.
+                </p>
+              </div>
+
+              <span
+                class="badge badge-warning"
+                id="collectionRequestsCount"
+              >
+                0
+              </span>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="collectionRequestsTable"
+            >
+              <div class="empty-state">
+                A carregar pedidos...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             PAYMENTS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-payments"
+          data-page-section="payments"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">FINANCEIRO</span>
+
+              <h2>
+                Pagamentos
+              </h2>
+
+              <p>
+                Controle pagamentos, referências e receitas.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newPaymentButton"
+            >
+              + Registar pagamento
+            </button>
+
+          </div>
+
+
+          <div class="mini-stats-grid">
+
+            <div class="mini-stat">
+              <span>Total recebido</span>
+              <strong id="paymentsTotalReceived">0 MT</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Pagamentos pagos</span>
+              <strong id="paymentsPaidCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Pendentes</span>
+              <strong id="paymentsPendingCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Falhados</span>
+              <strong id="paymentsFailedCount">0</strong>
+            </div>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="paymentSearch"
+                placeholder="Pesquisar código, cliente ou referência..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="paymentStatusFilter">
+              <option value="all">Todos os estados</option>
+              <option value="paid">Pagos</option>
+              <option value="pending">Pendentes</option>
+              <option value="failed">Falhados</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+
+            <select id="paymentMethodFilter">
+              <option value="all">Todos os métodos</option>
+              <option value="mpesa">M-Pesa</option>
+              <option value="emola">e-Mola</option>
+              <option value="bank">Transferência bancária</option>
+              <option value="cash">Numerário</option>
+              <option value="other">Outro</option>
+            </select>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Histórico de pagamentos</h3>
+                <p id="paymentsResultCount">
+                  0 pagamentos
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="paymentsTable"
+            >
+              <div class="empty-state">
+                A carregar pagamentos...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             REQUESTS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-requests"
+          data-page-section="requests"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">ATENDIMENTO</span>
+
+              <h2>
+                Pedidos dos Clientes
+              </h2>
+
+              <p>
+                Acompanhe e responda às solicitações dos clientes.
+              </p>
+            </div>
+
+          </div>
+
+
+          <div class="mini-stats-grid">
+
+            <div class="mini-stat">
+              <span>Novos</span>
+              <strong id="requestsNewCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Em tratamento</span>
+              <strong id="requestsProgressCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Resolvidos</span>
+              <strong id="requestsResolvedCount">0</strong>
+            </div>
+
+            <div class="mini-stat">
+              <span>Urgentes</span>
+              <strong id="requestsUrgentCount">0</strong>
+            </div>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="requestSearch"
+                placeholder="Pesquisar pedido, cliente ou assunto..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="requestStatusFilter">
+              <option value="all">Todos os estados</option>
+              <option value="new">Novos</option>
+              <option value="in_progress">Em tratamento</option>
+              <option value="resolved">Resolvidos</option>
+              <option value="rejected">Rejeitados</option>
+            </select>
+
+            <select id="requestPriorityFilter">
+              <option value="all">Todas as prioridades</option>
+              <option value="normal">Normal</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Pedidos recebidos</h3>
+                <p id="requestsResultCount">
+                  0 pedidos
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="requestsTable"
+            >
+              <div class="empty-state">
+                A carregar pedidos...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             NOTIFICATIONS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-notifications"
+          data-page-section="notifications"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">COMUNICAÇÃO</span>
+
+              <h2>
+                Notificações
+              </h2>
+
+              <p>
+                Envie e acompanhe notificações dirigidas aos clientes.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newNotificationButton"
+            >
+              + Nova notificação
+            </button>
+
+          </div>
+
+
+          <div class="toolbar">
+
+            <div class="search-box">
+              <span>⌕</span>
+
+              <input
+                type="search"
+                id="notificationSearch"
+                placeholder="Pesquisar cliente, título ou mensagem..."
+                autocomplete="off"
+              >
+            </div>
+
+            <select id="notificationTypeFilter">
+              <option value="all">Todos os tipos</option>
+              <option value="general">Geral</option>
+              <option value="collection">Recolha</option>
+              <option value="payment">Pagamento</option>
+              <option value="request">Pedido</option>
+              <option value="announcement">Aviso</option>
+              <option value="system">Sistema</option>
+            </select>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Notificações enviadas</h3>
+                <p id="notificationsResultCount">
+                  0 notificações
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="notificationsTable"
+            >
+              <div class="empty-state">
+                A carregar notificações...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             ANNOUNCEMENTS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-announcements"
+          data-page-section="announcements"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">COMUNICAÇÃO</span>
+
+              <h2>
+                Avisos
+              </h2>
+
+              <p>
+                Publique informações para todos os clientes do portal.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="newAnnouncementButton"
+            >
+              + Novo aviso
+            </button>
+
+          </div>
+
+
+          <div
+            class="announcement-grid"
+            id="announcementsGrid"
+          >
+            <div class="empty-state">
+              A carregar avisos...
+            </div>
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+
+              <div>
+                <h3>Gestão de avisos</h3>
+                <p>
+                  Todos os avisos criados no sistema.
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              class="table-container"
+              id="announcementsTable"
+            >
+              <div class="empty-state">
+                A carregar...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             REPORTS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-reports"
+          data-page-section="reports"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">ANÁLISE</span>
+
+              <h2>
+                Relatórios
+              </h2>
+
+              <p>
+                Indicadores operacionais e financeiros do MOSELI.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="refreshReportsButton"
+            >
+              ↻ Actualizar
+            </button>
+
+          </div>
+
+
+          <div class="report-cards">
+
+            <article class="report-card">
+              <span>Total de clientes</span>
+              <strong id="reportClients">0</strong>
+              <small id="reportActiveClients">0 activos</small>
+            </article>
+
+            <article class="report-card">
+              <span>Receita total</span>
+              <strong id="reportRevenue">0 MT</strong>
+              <small>Pagamentos confirmados</small>
+            </article>
+
+            <article class="report-card">
+              <span>Recolhas concluídas</span>
+              <strong id="reportCompletedCollections">0</strong>
+              <small>Operações concluídas</small>
+            </article>
+
+            <article class="report-card">
+              <span>Pedidos resolvidos</span>
+              <strong id="reportResolvedRequests">0</strong>
+              <small>Atendimento</small>
+            </article>
+
+          </div>
+
+
+          <div class="dashboard-grid">
+
+            <article class="panel">
+
+              <div class="panel-header">
+                <div>
+                  <h3>Resumo de clientes</h3>
+                  <p>Distribuição por estado</p>
+                </div>
+              </div>
+
+              <div
+                class="report-list"
+                id="clientReport"
+              >
+                <div class="empty-state">
+                  A carregar relatório...
+                </div>
+              </div>
+
+            </article>
+
+
+            <article class="panel">
+
+              <div class="panel-header">
+                <div>
+                  <h3>Resumo operacional</h3>
+                  <p>Estado das recolhas</p>
+                </div>
+              </div>
+
+              <div
+                class="report-list"
+                id="collectionReport"
+              >
+                <div class="empty-state">
+                  A carregar relatório...
+                </div>
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <article class="panel">
+
+            <div class="panel-header">
+              <div>
+                <h3>Resumo financeiro</h3>
+                <p>Distribuição dos pagamentos por estado</p>
+              </div>
+            </div>
+
+            <div
+              class="report-list"
+              id="paymentReport"
+            >
+              <div class="empty-state">
+                A carregar relatório...
+              </div>
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ===================================================
+             SETTINGS
+        ==================================================== -->
+
+        <section
+          class="page-section"
+          id="page-settings"
+          data-page-section="settings"
+        >
+
+          <div class="page-heading-row">
+
+            <div>
+              <span class="eyebrow">SISTEMA</span>
+
+              <h2>
+                Definições
+              </h2>
+
+              <p>
+                Informações e configuração do painel administrativo.
+              </p>
+            </div>
+
+          </div>
+
+
+          <div class="settings-grid">
+
+            <article class="panel">
+
+              <div class="panel-header">
+                <div>
+                  <h3>Conta administrativa</h3>
+                  <p>Dados da sessão actual</p>
+                </div>
+              </div>
+
+              <div class="settings-list">
+
+                <div class="setting-row">
+                  <span>Email</span>
+                  <strong id="settingsEmail">—</strong>
+                </div>
+
+                <div class="setting-row">
+                  <span>Estado da sessão</span>
+                  <strong class="text-success">
+                    Autenticado
+                  </strong>
+                </div>
+
+                <div class="setting-row">
+                  <span>Sistema</span>
+                  <strong>MOSELI CRM</strong>
+                </div>
+
+              </div>
+
+            </article>
+
+
+            <article class="panel">
+
+              <div class="panel-header">
+                <div>
+                  <h3>Base de dados</h3>
+                  <p>Estado da ligação ao Supabase</p>
+                </div>
+              </div>
+
+              <div class="settings-list">
+
+                <div class="setting-row">
+                  <span>Ligação</span>
+                  <strong
+                    class="text-success"
+                    id="databaseStatus"
+                  >
+                    Ligado
+                  </strong>
+                </div>
+
+                <div class="setting-row">
+                  <span>Clientes</span>
+                  <strong id="settingsClientsCount">0</strong>
+                </div>
+
+                <div class="setting-row">
+                  <span>Serviços</span>
+                  <strong id="settingsSubscriptionsCount">0</strong>
+                </div>
+
+              </div>
+
+            </article>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       MODAL ROOT
+  ========================================================== -->
+
+  <div
+    class="modal-backdrop"
+    id="modalBackdrop"
+    hidden
+  >
+
+    <div
+      class="modal"
+      id="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+
+      <div class="modal-header">
+
+        <div>
+          <span class="eyebrow" id="modalEyebrow">
+            MOSELI CRM
+          </span>
+
+          <h2 id="modalTitle">
+            Formulário
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="modal-close"
+          id="modalClose"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        class="modal-body"
+        id="modalBody"
+      ></div>
+
+
+      <div
+        class="modal-footer"
+        id="modalFooter"
+      ></div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       TOAST CONTAINER
+  ========================================================== -->
+
+  <div
+    class="toast-container"
+    id="toastContainer"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+
+  <!-- =========================================================
+       CONFIRMATION MODAL
+  ========================================================== -->
+
+  <div
+    class="confirm-backdrop"
+    id="confirmBackdrop"
+    hidden
+  >
+
+    <div class="confirm-dialog">
+
+      <div class="confirm-icon">
+        !
+      </div>
+
+      <h3 id="confirmTitle">
+        Confirmar acção
+      </h3>
+
+      <p id="confirmMessage">
+        Tem a certeza de que deseja continuar?
+      </p>
+
+      <div class="confirm-actions">
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="confirmCancel"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="confirmProceed"
+        >
+          Confirmar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================================================
+       CLIENT DETAILS DRAWER
+  ========================================================== -->
+
+  <aside
+    class="details-drawer"
+    id="detailsDrawer"
+    aria-hidden="true"
+  >
+
+    <div class="drawer-header">
+
+      <div>
+        <span class="eyebrow">
+          CLIENTE
+        </span>
+
+        <h2 id="drawerClientName">
+          Cliente
+        </h2>
+
+        <span
+          class="drawer-code"
+          id="drawerClientCode"
+        >
+          —
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="drawer-close"
+        id="drawerClose"
+        aria-label="Fechar"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div
+      class="drawer-body"
+      id="drawerBody"
+    >
+
+      <div class="drawer-section">
+
+        <h3>Informações pessoais</h3>
+
+        <div class="detail-list">
+
+          <div class="detail-item">
+            <span>Nome</span>
+            <strong id="drawerFullName">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Empresa</span>
+            <strong id="drawerBusinessName">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Email</span>
+            <strong id="drawerEmail">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Telefone</span>
+            <strong id="drawerPhone">—</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="drawer-section">
+
+        <h3>Localização</h3>
+
+        <div class="detail-list">
+
+          <div class="detail-item">
+            <span>Endereço</span>
+            <strong id="drawerAddress">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Bairro</span>
+            <strong id="drawerBairro">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Cidade</span>
+            <strong id="drawerCity">—</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Local de serviço</span>
+            <strong id="drawerServiceLocation">—</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="drawer-section">
+
+        <h3>Estado</h3>
+
+        <div id="drawerStatus">
+          —
+        </div>
+
+      </div>
+
+
+      <div class="drawer-section">
+
+        <h3>Serviço actual</h3>
+
+        <div id="drawerService">
+          A carregar...
+        </div>
+
+      </div>
+
+
+      <div class="drawer-section">
+
+        <h3>Acções</h3>
+
+        <div class="drawer-actions">
+
+          <button
+            type="button"
+            class="btn btn-primary btn-block"
+            id="drawerEditClient"
+          >
+            Editar cliente
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-block"
+            id="drawerViewCollections"
+          >
+            Ver recolhas
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-block"
+            id="drawerViewPayments"
+          >
+            Ver pagamentos
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </aside>
+
+
+  <div
+    class="drawer-overlay"
+    id="drawerOverlay"
+    hidden
+  ></div>
+
+
+  <!-- =========================================================
+       ADMIN JAVASCRIPT
+  ========================================================== -->
+
+  <script src="./admin.js"></script>
+
+</body>
+</html>
