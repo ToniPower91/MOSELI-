@@ -2,14 +2,7 @@
 
 /* =========================================================
 MOSELI | CLIENT PORTAL
-Production Client Portal
-Supabase Authentication + Client Data
-========================================================= */
-
-console.log(“MOSELI CLIENT PORTAL: START”);
-
-/* =========================================================
-SUPABASE CONFIG
+FINAL PRODUCTION VERSION
 ========================================================= */
 
 const SUPABASE_URL =
@@ -18,92 +11,56 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 “sb_publishable_lryWHU1aV0782oIFi4JKKg_Y4qugSlt”;
 
-let supabaseClient = null;
-let currentUser = null;
-let currentClient = null;
+let db = null;
+let authUser = null;
+let client = null;
 
 /* =========================================================
-DOM READY
+START
 ========================================================= */
 
-document.addEventListener(
-“DOMContentLoaded”,
-initializePortal
-);
+document.addEventListener(“DOMContentLoaded”, async () => {
 
-/* =========================================================
-INITIALIZE
-========================================================= */
-
-async function initializePortal() {
-
+console.log("MOSELI PORTAL START");
 try {
-    showLoading(
-        "A iniciar o Portal do Cliente..."
-    );
-    /* ---------------------------------------------
-       SUPABASE
-       --------------------------------------------- */
     if (!window.supabase) {
         throw new Error(
-            "A biblioteca Supabase não foi carregada."
+            "Supabase não foi carregado."
         );
     }
-    supabaseClient =
-        window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY,
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
+    db = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
             }
-        );
-    window.moseliSupabase =
-        supabaseClient;
-    /* ---------------------------------------------
-       SESSION
-       --------------------------------------------- */
-    showLoading(
-        "A verificar autenticação..."
+        }
     );
+    /*
+     * Get authenticated session
+     */
     const {
-        data: sessionData,
-        error: sessionError
-    } =
-        await supabaseClient.auth.getSession();
-    if (sessionError) {
-        throw sessionError;
+        data,
+        error
+    } = await db.auth.getSession();
+    if (error) {
+        throw error;
     }
-    if (
-        !sessionData ||
-        !sessionData.session ||
-        !sessionData.session.user
-    ) {
-        window.location.replace(
-            "./client-login.html"
-        );
+    if (!data.session) {
+        window.location.href =
+            "./client-login.html";
         return;
     }
-    currentUser =
-        sessionData.session.user;
-    console.log(
-        "MOSELI AUTH USER:",
-        currentUser.id
-    );
-    /* ---------------------------------------------
-       CLIENT
-       --------------------------------------------- */
-    showLoading(
-        "A verificar os dados do cliente..."
-    );
-    const {
-        data: client,
-        error: clientError
-    } =
-        await supabaseClient
+    authUser =
+        data.session.user;
+    /*
+     * Find client
+     */
+    const result =
+        await db
             .from("clients")
             .select(`
                 id,
@@ -121,29 +78,36 @@ try {
             `)
             .eq(
                 "auth_user_id",
-                currentUser.id
+                authUser.id
             )
             .maybeSingle();
-    if (clientError) {
-        throw clientError;
+    if (result.error) {
+        throw result.error;
     }
-    if (!client) {
-        throw new Error(
-            "O utilizador autenticado não está ligado a nenhum cliente."
-        );
+    if (!result.data) {
+        await db.auth.signOut();
+        window.location.href =
+            "./client-login.html";
+        return;
     }
+    client =
+        result.data;
+    /*
+     * Client must be active
+     */
     if (
-        String(client.status).toLowerCase() !==
-        "active"
+        String(client.status).toLowerCase()
+        !== "active"
     ) {
-        throw new Error(
-            "A conta deste cliente não está ativa."
+        await db.auth.signOut();
+        showError(
+            "A sua conta de cliente não está ativa."
         );
+        return;
     }
-    currentClient =
-        client;
-    window.moseliClient =
-        client;
+    /*
+     * Save client locally
+     */
     sessionStorage.setItem(
         "moseli_client_id",
         client.id
@@ -152,39 +116,31 @@ try {
         "moseli_client_code",
         client.client_code
     );
-    /* ---------------------------------------------
-       CLIENT HEADER
-       --------------------------------------------- */
-    populateClient(client);
-    /* ---------------------------------------------
-       NAVIGATION
-       --------------------------------------------- */
+    /*
+     * Populate dashboard
+     */
+    populateClient();
+    /*
+     * IMPORTANT:
+     * Show portal NOW.
+     */
+    showPortal();
+    /*
+     * Setup buttons/navigation
+     */
     setupNavigation();
-    /* ---------------------------------------------
-       LOGOUT
-       --------------------------------------------- */
     setupLogout();
-    /* ---------------------------------------------
-       REQUEST BUTTON
-       --------------------------------------------- */
-    setupRequestButtons();
-    /* ---------------------------------------------
-       SHOW PORTAL
-       --------------------------------------------- */
-    hideLoading();
-    const content =
-        document.getElementById(
-            "portalContent"
-        );
-    if (content) {
-        content.hidden = false;
-    }
-    /* ---------------------------------------------
-       LOAD DASHBOARD
-       --------------------------------------------- */
-    await loadDashboard();
+    setupRequestButton();
+    /*
+     * Load secondary data independently.
+     * None of these can block the dashboard.
+     */
+    loadService();
+    loadCollections();
+    loadPayments();
+    loadRequests();
     console.log(
-        "MOSELI CLIENT PORTAL: READY"
+        "MOSELI PORTAL READY"
     );
 } catch (error) {
     console.error(
@@ -192,42 +148,17 @@ try {
         error
     );
     showError(
-        error.message ||
         "Não foi possível carregar o Portal do Cliente."
     );
 }
-/* ---------------------------------------------
-   AUTH LISTENER
-   --------------------------------------------- */
-if (supabaseClient) {
-    supabaseClient.auth.onAuthStateChange(
-        function (
-            event,
-            session
-        ) {
-            console.log(
-                "MOSELI AUTH EVENT:",
-                event
-            );
-            if (
-                event === "SIGNED_OUT" ||
-                !session
-            ) {
-                window.location.replace(
-                    "./client-login.html"
-                );
-            }
-        }
-    );
-}
 
-}
+});
 
 /* =========================================================
 POPULATE CLIENT
 ========================================================= */
 
-function populateClient(client) {
+function populateClient() {
 
 setText(
     "userName",
@@ -247,7 +178,9 @@ setText(
 );
 setText(
     "dashboardStatus",
-    formatStatus(client.status)
+    translateStatus(
+        client.status
+    )
 );
 setText(
     "profileName",
@@ -255,7 +188,9 @@ setText(
 );
 setText(
     "profileEmail",
-    client.email || currentUser.email
+    client.email ||
+    authUser.email ||
+    "--"
 );
 setText(
     "profileCode",
@@ -263,15 +198,27 @@ setText(
 );
 setText(
     "profileStatus",
-    formatStatus(client.status)
+    translateStatus(
+        client.status
+    )
 );
+/*
+ * Optional profile fields.
+ * These work if added to HTML later.
+ */
 setText(
     "profilePhone",
     client.phone
 );
 setText(
     "profileAddress",
-    buildAddress(client)
+    [
+        client.address,
+        client.bairro,
+        client.city
+    ]
+    .filter(Boolean)
+    .join(", ")
 );
 const initial =
     client.full_name
@@ -288,649 +235,25 @@ setText(
 }
 
 /* =========================================================
-DASHBOARD
+SHOW PORTAL
 ========================================================= */
 
-async function loadDashboard() {
+function showPortal() {
 
-const results =
-    await Promise.allSettled([
-        loadNotifications(),
-        loadAnnouncements(),
-        loadDashboardSubscription(),
-        loadNextCollection()
-    ]);
-results.forEach(function (result) {
-    if (
-        result.status === "rejected"
-    ) {
-        console.error(
-            "Dashboard module error:",
-            result.reason
-        );
-    }
-});
-
-}
-
-/* =========================================================
-SUBSCRIPTION SUMMARY
-========================================================= */
-
-async function loadDashboardSubscription() {
-
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("subscriptions")
-        .select(`
-            id,
-            plan_name,
-            frequency,
-            price,
-            currency,
-            start_date,
-            end_date,
-            status
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .eq(
-            "status",
-            "active"
-        )
-        .order(
-            "start_date",
-            {
-                ascending: false
-            }
-        )
-        .limit(1);
-if (error) {
-    throw error;
-}
-const subscription =
-    data && data.length
-        ? data[0]
-        : null;
-if (!subscription) {
-    return;
-}
-setText(
-    "serviceInfo",
-    formatServiceSummary(
-        subscription
-    )
-);
-
-}
-
-/* =========================================================
-SERVICE
-========================================================= */
-
-async function loadServicePage() {
-
-const container =
+const loading =
     document.getElementById(
-        "serviceInfo"
+        "portalLoading"
     );
-if (!container) {
-    return;
-}
-container.textContent =
-    "A carregar o seu serviço...";
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("subscriptions")
-        .select(`
-            id,
-            plan_name,
-            frequency,
-            price,
-            currency,
-            start_date,
-            end_date,
-            status,
-            notes
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .order(
-            "start_date",
-            {
-                ascending: false
-            }
-        );
-if (error) {
-    container.textContent =
-        "Não foi possível carregar o serviço.";
-    console.error(
-        error
-    );
-    return;
-}
-if (!data || !data.length) {
-    container.textContent =
-        "Ainda não existem serviços registados.";
-    return;
-}
-container.innerHTML =
-    data.map(
-        formatSubscriptionCard
-    ).join("");
-
-}
-
-/* =========================================================
-COLLECTIONS
-========================================================= */
-
-async function loadCollections() {
-
-const container =
+const content =
     document.getElementById(
-        "collectionsList"
+        "portalContent"
     );
-if (!container) {
-    return;
+if (loading) {
+    loading.hidden = true;
 }
-container.textContent =
-    "A carregar recolhas...";
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("collections")
-        .select(`
-            id,
-            collection_code,
-            collection_date,
-            collection_time,
-            frequency,
-            location,
-            status,
-            notes
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .order(
-            "collection_date",
-            {
-                ascending: false
-            }
-        );
-if (error) {
-    container.textContent =
-        "Não foi possível carregar as recolhas.";
-    console.error(
-        error
-    );
-    return;
+if (content) {
+    content.hidden = false;
 }
-if (!data || !data.length) {
-    container.textContent =
-        "Ainda não existem recolhas registadas.";
-    return;
-}
-container.innerHTML =
-    data.map(
-        formatCollectionCard
-    ).join("");
-
-}
-
-/* =========================================================
-NEXT COLLECTION
-========================================================= */
-
-async function loadNextCollection() {
-
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("collections")
-        .select(`
-            collection_code,
-            collection_date,
-            collection_time,
-            status,
-            location
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .eq(
-            "status",
-            "scheduled"
-        )
-        .gte(
-            "collection_date",
-            new Date()
-                .toISOString()
-                .split("T")[0]
-        )
-        .order(
-            "collection_date",
-            {
-                ascending: true
-            }
-        )
-        .limit(1);
-if (error) {
-    throw error;
-}
-if (!data || !data.length) {
-    return;
-}
-const collection =
-    data[0];
-const dashboard =
-    document.querySelector(
-        '[data-content="dashboard"]'
-    );
-if (!dashboard) {
-    return;
-}
-const existing =
-    dashboard.querySelector(
-        ".next-collection-card"
-    );
-if (existing) {
-    existing.remove();
-}
-const card =
-    document.createElement(
-        "div"
-    );
-card.className =
-    "portal-section next-collection-card";
-card.innerHTML =
-    "<h2>Próxima Recolha</h2>" +
-    "<p>" +
-    formatDate(
-        collection.collection_date
-    ) +
-    (
-        collection.collection_time
-            ? " às " +
-              collection.collection_time.substring(
-                  0,
-                  5
-              )
-            : ""
-    ) +
-    "</p>" +
-    "<p>" +
-    escapeHTML(
-        collection.location || ""
-    ) +
-    "</p>";
-dashboard.appendChild(card);
-
-}
-
-/* =========================================================
-PAYMENTS
-========================================================= */
-
-async function loadPayments() {
-
-const container =
-    document.getElementById(
-        "paymentsList"
-    );
-if (!container) {
-    return;
-}
-container.textContent =
-    "A carregar pagamentos...";
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("payments")
-        .select(`
-            id,
-            payment_code,
-            payment_date,
-            period_start,
-            period_end,
-            amount,
-            currency,
-            payment_method,
-            status,
-            reference,
-            notes
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .order(
-            "payment_date",
-            {
-                ascending: false
-            }
-        );
-if (error) {
-    container.textContent =
-        "Não foi possível carregar os pagamentos.";
-    console.error(
-        error
-    );
-    return;
-}
-if (!data || !data.length) {
-    container.textContent =
-        "Ainda não existem pagamentos registados.";
-    return;
-}
-container.innerHTML =
-    data.map(
-        formatPaymentCard
-    ).join("");
-
-}
-
-/* =========================================================
-REQUESTS
-========================================================= */
-
-async function loadRequests() {
-
-const container =
-    document.getElementById(
-        "requestsList"
-    );
-if (!container) {
-    return;
-}
-container.textContent =
-    "A carregar pedidos...";
-const [
-    requestsResult,
-    collectionRequestsResult
-] =
-    await Promise.all([
-        supabaseClient
-            .from("requests")
-            .select(`
-                id,
-                request_code,
-                request_type,
-                priority,
-                subject,
-                effective_date,
-                description,
-                status,
-                admin_response,
-                resolved_at,
-                created_at
-            `)
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            ),
-        supabaseClient
-            .from("collection_requests")
-            .select(`
-                id,
-                request_code,
-                requested_date,
-                requested_time,
-                notes,
-                status,
-                admin_notes,
-                created_at
-            `)
-            .eq(
-                "client_id",
-                currentClient.id
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            )
-    ]);
-if (requestsResult.error) {
-    console.error(
-        "Requests error:",
-        requestsResult.error
-    );
-}
-if (collectionRequestsResult.error) {
-    console.error(
-        "Collection requests error:",
-        collectionRequestsResult.error
-    );
-}
-const normalRequests =
-    requestsResult.data || [];
-const collectionRequests =
-    collectionRequestsResult.data || [];
-if (
-    !normalRequests.length &&
-    !collectionRequests.length
-) {
-    container.innerHTML =
-        "Ainda não existem pedidos.";
-    return;
-}
-let html = "";
-html +=
-    normalRequests
-        .map(
-            formatRequestCard
-        )
-        .join("");
-html +=
-    collectionRequests
-        .map(
-            formatCollectionRequestCard
-        )
-        .join("");
-container.innerHTML =
-    html;
-
-}
-
-/* =========================================================
-NOTIFICATIONS
-========================================================= */
-
-async function loadNotifications() {
-
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("notifications")
-        .select(`
-            id,
-            title,
-            message,
-            notification_type,
-            is_read,
-            created_at
-        `)
-        .eq(
-            "client_id",
-            currentClient.id
-        )
-        .order(
-            "created_at",
-            {
-                ascending: false
-            }
-        )
-        .limit(10);
-if (error) {
-    throw error;
-}
-const dashboard =
-    document.querySelector(
-        '[data-content="dashboard"]'
-    );
-if (!dashboard) {
-    return;
-}
-const existing =
-    dashboard.querySelector(
-        ".notifications-section"
-    );
-if (existing) {
-    existing.remove();
-}
-if (!data || !data.length) {
-    return;
-}
-const section =
-    document.createElement(
-        "div"
-    );
-section.className =
-    "portal-section notifications-section";
-section.innerHTML =
-    "<h2>Notificações</h2>" +
-    data.map(
-        function (item) {
-            return (
-                "<div class='info-box'>" +
-                "<strong>" +
-                escapeHTML(
-                    item.title
-                ) +
-                "</strong><br>" +
-                escapeHTML(
-                    item.message
-                ) +
-                "<br><small>" +
-                formatDateTime(
-                    item.created_at
-                ) +
-                "</small>" +
-                "</div>"
-            );
-        }
-    ).join("");
-dashboard.appendChild(
-    section
-);
-
-}
-
-/* =========================================================
-ANNOUNCEMENTS
-========================================================= */
-
-async function loadAnnouncements() {
-
-const now =
-    new Date().toISOString();
-const {
-    data,
-    error
-} =
-    await supabaseClient
-        .from("announcements")
-        .select(`
-            id,
-            title,
-            content,
-            announcement_type,
-            publish_date,
-            expires_at
-        `)
-        .eq(
-            "published",
-            true
-        )
-        .lte(
-            "publish_date",
-            now
-        )
-        .or(
-            "expires_at.is.null,expires_at.gte." +
-            now
-        )
-        .order(
-            "publish_date",
-            {
-                ascending: false
-            }
-        )
-        .limit(10);
-if (error) {
-    throw error;
-}
-const dashboard =
-    document.querySelector(
-        '[data-content="dashboard"]'
-    );
-if (!dashboard) {
-    return;
-}
-if (!data || !data.length) {
-    return;
-}
-const section =
-    document.createElement(
-        "div"
-    );
-section.className =
-    "portal-section announcements-section";
-section.innerHTML =
-    "<h2>Avisos</h2>" +
-    data.map(
-        function (item) {
-            return (
-                "<div class='info-box'>" +
-                "<strong>" +
-                escapeHTML(
-                    item.title
-                ) +
-                "</strong><br>" +
-                escapeHTML(
-                    item.content
-                ) +
-                "<br><small>" +
-                formatDate(
-                    item.publish_date
-                ) +
-                "</small>" +
-                "</div>"
-            );
-        }
-    ).join("");
-dashboard.appendChild(
-    section
-);
 
 }
 
@@ -948,7 +271,7 @@ const pages =
     document.querySelectorAll(
         ".portal-page"
     );
-const pageTitle =
+const title =
     document.getElementById(
         "pageTitle"
     );
@@ -966,72 +289,35 @@ const titles = {
     profile:
         "Meu Perfil"
 };
-buttons.forEach(
-    function (button) {
-        button.type = "button";
-        button.addEventListener(
-            "click",
-            async function (event) {
-                event.preventDefault();
-                const target =
-                    button.dataset.page;
-                buttons.forEach(
-                    function (item) {
-                        item.classList.remove(
-                            "active"
-                        );
-                    }
-                );
-                button.classList.add(
-                    "active"
-                );
-                pages.forEach(
-                    function (page) {
-                        page.hidden =
-                            page.dataset.content !==
-                            target;
-                    }
-                );
-                if (pageTitle) {
-                    pageTitle.textContent =
-                        titles[target] ||
-                        "Portal do Cliente";
-                }
-                try {
-                    if (
-                        target ===
-                        "service"
-                    ) {
-                        await loadServicePage();
-                    }
-                    if (
-                        target ===
-                        "collections"
-                    ) {
-                        await loadCollections();
-                    }
-                    if (
-                        target ===
-                        "payments"
-                    ) {
-                        await loadPayments();
-                    }
-                    if (
-                        target ===
-                        "requests"
-                    ) {
-                        await loadRequests();
-                    }
-                } catch (error) {
-                    console.error(
-                        "Page loading error:",
-                        error
-                    );
-                }
+buttons.forEach(button => {
+    button.type = "button";
+    button.addEventListener(
+        "click",
+        () => {
+            const target =
+                button.dataset.page;
+            buttons.forEach(
+                item =>
+                    item.classList.remove(
+                        "active"
+                    )
+            );
+            button.classList.add(
+                "active"
+            );
+            pages.forEach(page => {
+                page.hidden =
+                    page.dataset.content
+                    !== target;
+            });
+            if (title) {
+                title.textContent =
+                    titles[target] ||
+                    "Portal do Cliente";
             }
-        );
-    }
-);
+        }
+    );
+});
 
 }
 
@@ -1051,32 +337,550 @@ if (!button) {
 button.type = "button";
 button.addEventListener(
     "click",
-    async function () {
-        button.disabled =
-            true;
+    async () => {
+        button.disabled = true;
         button.textContent =
             "A sair...";
-        try {
-            await supabaseClient.auth.signOut();
-        } catch (error) {
-            console.error(
-                error
-            );
-        }
-        sessionStorage.clear();
-        window.location.replace(
-            "./client-login.html"
+        await db.auth.signOut();
+        sessionStorage.removeItem(
+            "moseli_client_id"
         );
+        sessionStorage.removeItem(
+            "moseli_client_code"
+        );
+        window.location.href =
+            "./client-login.html";
     }
 );
 
 }
 
 /* =========================================================
-REQUEST BUTTONS
+SERVICE
 ========================================================= */
 
-function setupRequestButtons() {
+async function loadService() {
+
+const box =
+    document.getElementById(
+        "serviceInfo"
+    );
+if (!box) {
+    return;
+}
+try {
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("subscriptions")
+            .select(`
+                id,
+                plan_name,
+                frequency,
+                price,
+                currency,
+                start_date,
+                end_date,
+                status,
+                notes
+            `)
+            .eq(
+                "client_id",
+                client.id
+            )
+            .order(
+                "start_date",
+                {
+                    ascending: false
+                }
+            );
+    if (error) {
+        throw error;
+    }
+    if (!data || !data.length) {
+        box.innerHTML =
+            "Ainda não existem dados de serviço registados.";
+        return;
+    }
+    box.innerHTML =
+        data
+            .map(subscription => `
+                <div class="info-box">
+                    <strong>
+                        ${escapeHTML(
+                            subscription.plan_name
+                        )}
+                    </strong>
+                    <br>
+                    Frequência:
+                    ${escapeHTML(
+                        subscription.frequency
+                    )}
+                    <br>
+                    Preço:
+                    ${formatMoney(
+                        subscription.price,
+                        subscription.currency
+                    )}
+                    <br>
+                    Início:
+                    ${formatDate(
+                        subscription.start_date
+                    )}
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        subscription.status
+                    )}
+                    ${
+                        subscription.end_date
+                            ? `
+                                <br>
+                                Fim:
+                                ${formatDate(
+                                    subscription.end_date
+                                )}
+                              `
+                            : ""
+                    }
+                </div>
+            `)
+            .join("");
+} catch (error) {
+    console.error(
+        "Service error:",
+        error
+    );
+    box.innerHTML =
+        "Não foi possível carregar os dados do serviço.";
+}
+
+}
+
+/* =========================================================
+COLLECTIONS
+========================================================= */
+
+async function loadCollections() {
+
+const page =
+    document.querySelector(
+        '[data-content="collections"]'
+    );
+if (!page) {
+    return;
+}
+const section =
+    page.querySelector(
+        ".portal-section"
+    );
+if (!section) {
+    return;
+}
+try {
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("collections")
+            .select(`
+                id,
+                collection_code,
+                collection_date,
+                collection_time,
+                frequency,
+                location,
+                status,
+                notes
+            `)
+            .eq(
+                "client_id",
+                client.id
+            )
+            .order(
+                "collection_date",
+                {
+                    ascending: false
+                }
+            );
+    if (error) {
+        throw error;
+    }
+    const oldEmpty =
+        section.querySelector(
+            ".empty-state"
+        );
+    if (oldEmpty) {
+        oldEmpty.remove();
+    }
+    let list =
+        section.querySelector(
+            ".collections-list"
+        );
+    if (!list) {
+        list =
+            document.createElement(
+                "div"
+            );
+        list.className =
+            "collections-list";
+        section.appendChild(
+            list
+        );
+    }
+    if (!data || !data.length) {
+        list.innerHTML =
+            "<div class='empty-state'>" +
+            "Ainda não existem recolhas disponíveis." +
+            "</div>";
+        return;
+    }
+    list.innerHTML =
+        data
+            .map(item => `
+                <div class="info-box">
+                    <strong>
+                        Recolha
+                        ${escapeHTML(
+                            item.collection_code
+                        )}
+                    </strong>
+                    <br>
+                    Data:
+                    ${formatDate(
+                        item.collection_date
+                    )}
+                    ${
+                        item.collection_time
+                            ? `
+                                <br>
+                                Hora:
+                                ${item.collection_time.substring(
+                                    0,
+                                    5
+                                )}
+                              `
+                            : ""
+                    }
+                    ${
+                        item.frequency
+                            ? `
+                                <br>
+                                Frequência:
+                                ${escapeHTML(
+                                    item.frequency
+                                )}
+                              `
+                            : ""
+                    }
+                    ${
+                        item.location
+                            ? `
+                                <br>
+                                Local:
+                                ${escapeHTML(
+                                    item.location
+                                )}
+                              `
+                            : ""
+                    }
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        item.status
+                    )}
+                </div>
+            `)
+            .join("");
+} catch (error) {
+    console.error(
+        "Collections error:",
+        error
+    );
+}
+
+}
+
+/* =========================================================
+PAYMENTS
+========================================================= */
+
+async function loadPayments() {
+
+const page =
+    document.querySelector(
+        '[data-content="payments"]'
+    );
+if (!page) {
+    return;
+}
+const section =
+    page.querySelector(
+        ".portal-section"
+    );
+if (!section) {
+    return;
+}
+try {
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("payments")
+            .select(`
+                id,
+                payment_code,
+                payment_date,
+                amount,
+                currency,
+                payment_method,
+                status,
+                reference
+            `)
+            .eq(
+                "client_id",
+                client.id
+            )
+            .order(
+                "payment_date",
+                {
+                    ascending: false
+                }
+            );
+    if (error) {
+        throw error;
+    }
+    const oldEmpty =
+        section.querySelector(
+            ".empty-state"
+        );
+    if (oldEmpty) {
+        oldEmpty.remove();
+    }
+    let list =
+        section.querySelector(
+            ".payments-list"
+        );
+    if (!list) {
+        list =
+            document.createElement(
+                "div"
+            );
+        list.className =
+            "payments-list";
+        section.appendChild(
+            list
+        );
+    }
+    if (!data || !data.length) {
+        list.innerHTML =
+            "<div class='empty-state'>" +
+            "Ainda não existem pagamentos disponíveis." +
+            "</div>";
+        return;
+    }
+    list.innerHTML =
+        data
+            .map(item => `
+                <div class="info-box">
+                    <strong>
+                        Pagamento
+                        ${escapeHTML(
+                            item.payment_code
+                        )}
+                    </strong>
+                    <br>
+                    Data:
+                    ${formatDate(
+                        item.payment_date
+                    )}
+                    <br>
+                    Valor:
+                    ${formatMoney(
+                        item.amount,
+                        item.currency
+                    )}
+                    ${
+                        item.payment_method
+                            ? `
+                                <br>
+                                Método:
+                                ${escapeHTML(
+                                    item.payment_method
+                                )}
+                              `
+                            : ""
+                    }
+                    ${
+                        item.reference
+                            ? `
+                                <br>
+                                Referência:
+                                ${escapeHTML(
+                                    item.reference
+                                )}
+                              `
+                            : ""
+                    }
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        item.status
+                    )}
+                </div>
+            `)
+            .join("");
+} catch (error) {
+    console.error(
+        "Payments error:",
+        error
+    );
+}
+
+}
+
+/* =========================================================
+REQUESTS
+========================================================= */
+
+async function loadRequests() {
+
+const page =
+    document.querySelector(
+        '[data-content="requests"]'
+    );
+if (!page) {
+    return;
+}
+let list =
+    document.getElementById(
+        "requestsList"
+    );
+if (!list) {
+    list =
+        document.createElement(
+            "div"
+        );
+    list.id =
+        "requestsList";
+    list.className =
+        "requests-list";
+    page
+        .querySelector(
+            ".portal-section"
+        )
+        .appendChild(
+            list
+        );
+}
+try {
+    const {
+        data,
+        error
+    } =
+        await db
+            .from("requests")
+            .select(`
+                id,
+                request_code,
+                request_type,
+                priority,
+                subject,
+                effective_date,
+                description,
+                status,
+                admin_response,
+                created_at
+            `)
+            .eq(
+                "client_id",
+                client.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+    if (error) {
+        throw error;
+    }
+    if (!data || !data.length) {
+        list.innerHTML =
+            "<div class='empty-state'>" +
+            "Ainda não existem pedidos." +
+            "</div>";
+        return;
+    }
+    list.innerHTML =
+        data
+            .map(item => `
+                <div class="info-box">
+                    <strong>
+                        ${escapeHTML(
+                            item.subject
+                        )}
+                    </strong>
+                    <br>
+                    Código:
+                    ${escapeHTML(
+                        item.request_code
+                    )}
+                    <br>
+                    Tipo:
+                    ${escapeHTML(
+                        item.request_type
+                    )}
+                    <br>
+                    Prioridade:
+                    ${escapeHTML(
+                        item.priority
+                    )}
+                    <br>
+                    Estado:
+                    ${translateStatus(
+                        item.status
+                    )}
+                    <br>
+                    ${escapeHTML(
+                        item.description
+                    )}
+                    ${
+                        item.admin_response
+                            ? `
+                                <br><br>
+                                Resposta MOSELI:
+                                ${escapeHTML(
+                                    item.admin_response
+                                )}
+                              `
+                            : ""
+                    }
+                </div>
+            `)
+            .join("");
+} catch (error) {
+    console.error(
+        "Requests error:",
+        error
+    );
+    list.innerHTML =
+        "<div class='empty-state'>" +
+        "Não foi possível carregar os pedidos." +
+        "</div>";
+}
+
+}
+
+/* =========================================================
+NEW REQUEST
+========================================================= */
+
+function setupRequestButton() {
 
 const button =
     document.getElementById(
@@ -1088,126 +892,129 @@ if (!button) {
 button.type = "button";
 button.addEventListener(
     "click",
-    function () {
-        openRequestForm();
-    }
-);
-
-}
-
-/* =========================================================
-NEW REQUEST FORM
-========================================================= */
-
-function openRequestForm() {
-
-const page =
-    document.querySelector(
-        '[data-content="requests"]'
-    );
-if (!page) {
-    return;
-}
-const oldForm =
-    document.getElementById(
-        "moseliRequestForm"
-    );
-if (oldForm) {
-    oldForm.remove();
-    return;
-}
-const form =
-    document.createElement(
-        "form"
-    );
-form.id =
-    "moseliRequestForm";
-form.className =
-    "portal-section";
-form.innerHTML = `
-    <h2>Novo Pedido</h2>
-    <label>
-        Tipo de pedido
-        <select id="requestType" required>
-            <option value="general">Geral</option>
-            <option value="complaint">Reclamação</option>
-            <option value="pause">Pausa</option>
-            <option value="resume">Retomar serviço</option>
-            <option value="cancellation">Cancelamento</option>
-            <option value="collection_change">
-                Alteração de recolha
-            </option>
-            <option value="address_change">
-                Alteração de morada
-            </option>
-        </select>
-    </label>
-    <br>
-    <label>
-        Prioridade
-        <select id="requestPriority" required>
-            <option value="normal">Normal</option>
-            <option value="high">Alta</option>
-            <option value="urgent">Urgente</option>
-        </select>
-    </label>
-    <br>
-    <label>
-        Assunto
-        <input
-            id="requestSubject"
-            type="text"
-            required
-        >
-    </label>
-    <br>
-    <label>
-        Data efetiva
-        <input
-            id="requestEffectiveDate"
-            type="date"
-        >
-    </label>
-    <br>
-    <label>
-        Descrição
-        <textarea
-            id="requestDescription"
-            rows="5"
-            required
-        ></textarea>
-    </label>
-    <br>
-    <button
-        type="submit"
-        class="primary-button"
-    >
-        Enviar Pedido
-    </button>
-    <button
-        type="button"
-        id="cancelRequestForm"
-    >
-        Cancelar
-    </button>
-    <div id="requestFormMessage"></div>
-`;
-page.prepend(
-    form
-);
-document
-    .getElementById(
-        "cancelRequestForm"
-    )
-    .addEventListener(
-        "click",
-        function () {
-            form.remove();
+    () => {
+        if (
+            document.getElementById(
+                "moseliRequestForm"
+            )
+        ) {
+            return;
         }
-    );
-form.addEventListener(
-    "submit",
-    submitRequest
+        const page =
+            document.querySelector(
+                '[data-content="requests"]'
+            );
+        if (!page) {
+            return;
+        }
+        const form =
+            document.createElement(
+                "form"
+            );
+        form.id =
+            "moseliRequestForm";
+        form.className =
+            "portal-section";
+        form.innerHTML = `
+            <h2>Novo Pedido</h2>
+            <label>
+                Tipo de pedido
+                <select
+                    id="requestType"
+                    required
+                >
+                    <option value="general">
+                        Geral
+                    </option>
+                    <option value="complaint">
+                        Reclamação
+                    </option>
+                    <option value="pause">
+                        Pausa
+                    </option>
+                    <option value="resume">
+                        Retomar serviço
+                    </option>
+                    <option value="cancellation">
+                        Cancelamento
+                    </option>
+                    <option value="collection_change">
+                        Alteração de recolha
+                    </option>
+                    <option value="address_change">
+                        Alteração de morada
+                    </option>
+                </select>
+            </label>
+            <br>
+            <label>
+                Prioridade
+                <select
+                    id="requestPriority"
+                    required
+                >
+                    <option value="normal">
+                        Normal
+                    </option>
+                    <option value="high">
+                        Alta
+                    </option>
+                    <option value="urgent">
+                        Urgente
+                    </option>
+                </select>
+            </label>
+            <br>
+            <label>
+                Assunto
+                <input
+                    id="requestSubject"
+                    type="text"
+                    required
+                >
+            </label>
+            <br>
+            <label>
+                Descrição
+                <textarea
+                    id="requestDescription"
+                    rows="5"
+                    required
+                ></textarea>
+            </label>
+            <br>
+            <button
+                type="submit"
+                class="primary-button"
+            >
+                Enviar Pedido
+            </button>
+            <button
+                type="button"
+                id="cancelRequest"
+            >
+                Cancelar
+            </button>
+            <div
+                id="requestMessage"
+            ></div>
+        `;
+        page.prepend(
+            form
+        );
+        document
+            .getElementById(
+                "cancelRequest"
+            )
+            .addEventListener(
+                "click",
+                () => form.remove()
+            );
+        form.addEventListener(
+            "submit",
+            submitRequest
+        );
+    }
 );
 
 }
@@ -1219,312 +1026,88 @@ SUBMIT REQUEST
 async function submitRequest(event) {
 
 event.preventDefault();
-const message =
-    document.getElementById(
-        "requestFormMessage"
-    );
+const form =
+    event.target;
 const button =
-    event.target.querySelector(
+    form.querySelector(
         "button[type='submit']"
     );
-button.disabled =
-    true;
+const message =
+    document.getElementById(
+        "requestMessage"
+    );
+button.disabled = true;
 button.textContent =
     "A enviar...";
 const code =
     "REQ-" +
     Date.now();
-const payload = {
-    request_code:
-        code,
-    client_id:
-        currentClient.id,
-    request_type:
-        document.getElementById(
-            "requestType"
-        ).value,
-    priority:
-        document.getElementById(
-            "requestPriority"
-        ).value,
-    subject:
-        document.getElementById(
-            "requestSubject"
-        ).value.trim(),
-    effective_date:
-        document.getElementById(
-            "requestEffectiveDate"
-        ).value ||
-        null,
-    description:
-        document.getElementById(
-            "requestDescription"
-        ).value.trim(),
-    status:
-        "new"
-};
-const {
-    error
-} =
-    await supabaseClient
-        .from("requests")
-        .insert(
-            payload
-        );
-if (error) {
+try {
+    const {
+        error
+    } =
+        await db
+            .from("requests")
+            .insert({
+                request_code:
+                    code,
+                client_id:
+                    client.id,
+                request_type:
+                    document
+                        .getElementById(
+                            "requestType"
+                        )
+                        .value,
+                priority:
+                    document
+                        .getElementById(
+                            "requestPriority"
+                        )
+                        .value,
+                subject:
+                    document
+                        .getElementById(
+                            "requestSubject"
+                        )
+                        .value
+                        .trim(),
+                description:
+                    document
+                        .getElementById(
+                            "requestDescription"
+                        )
+                        .value
+                        .trim(),
+                status:
+                    "new"
+            });
+    if (error) {
+        throw error;
+    }
+    message.textContent =
+        "Pedido enviado com sucesso.";
+    form.reset();
+    await loadRequests();
+} catch (error) {
     console.error(
+        "Request submit error:",
         error
     );
     message.textContent =
-        "Não foi possível enviar o pedido: " +
-        error.message;
-    button.disabled =
-        false;
-    button.textContent =
-        "Enviar Pedido";
-    return;
+        "Erro ao enviar o pedido.";
 }
-message.textContent =
-    "Pedido enviado com sucesso.";
-event.target.reset();
-button.disabled =
-    false;
+button.disabled = false;
 button.textContent =
     "Enviar Pedido";
-await loadRequests();
 
 }
 
 /* =========================================================
-FORMATTING
+STATUS
 ========================================================= */
 
-function formatSubscriptionCard(item) {
-
-return `
-    <div class="info-box">
-        <strong>
-            ${escapeHTML(item.plan_name)}
-        </strong>
-        <br>
-        Frequência:
-        ${escapeHTML(item.frequency)}
-        <br>
-        Preço:
-        ${formatMoney(
-            item.price,
-            item.currency
-        )}
-        <br>
-        Início:
-        ${formatDate(item.start_date)}
-        <br>
-        Estado:
-        ${formatStatus(item.status)}
-        ${
-            item.end_date
-                ? "<br>Fim: " +
-                  formatDate(item.end_date)
-                : ""
-        }
-        ${
-            item.notes
-                ? "<br>" +
-                  escapeHTML(item.notes)
-                : ""
-        }
-    </div>
-`;
-
-}
-
-function formatCollectionCard(item) {
-
-return `
-    <div class="info-box">
-        <strong>
-            Recolha ${escapeHTML(
-                item.collection_code
-            )}
-        </strong>
-        <br>
-        Data:
-        ${formatDate(item.collection_date)}
-        ${
-            item.collection_time
-                ? "<br>Hora: " +
-                  item.collection_time.substring(
-                      0,
-                      5
-                  )
-                : ""
-        }
-        ${
-            item.frequency
-                ? "<br>Frequência: " +
-                  escapeHTML(item.frequency)
-                : ""
-        }
-        ${
-            item.location
-                ? "<br>Local: " +
-                  escapeHTML(item.location)
-                : ""
-        }
-        <br>
-        Estado:
-        ${formatStatus(item.status)}
-        ${
-            item.notes
-                ? "<br>" +
-                  escapeHTML(item.notes)
-                : ""
-        }
-    </div>
-`;
-
-}
-
-function formatPaymentCard(item) {
-
-return `
-    <div class="info-box">
-        <strong>
-            Pagamento ${escapeHTML(
-                item.payment_code
-            )}
-        </strong>
-        <br>
-        Data:
-        ${formatDate(item.payment_date)}
-        <br>
-        Valor:
-        ${formatMoney(
-            item.amount,
-            item.currency
-        )}
-        ${
-            item.payment_method
-                ? "<br>Método: " +
-                  escapeHTML(
-                      item.payment_method
-                  )
-                : ""
-        }
-        ${
-            item.reference
-                ? "<br>Referência: " +
-                  escapeHTML(
-                      item.reference
-                  )
-                : ""
-        }
-        <br>
-        Estado:
-        ${formatStatus(item.status)}
-    </div>
-`;
-
-}
-
-function formatRequestCard(item) {
-
-return `
-    <div class="info-box">
-        <strong>
-            ${escapeHTML(item.subject)}
-        </strong>
-        <br>
-        Código:
-        ${escapeHTML(item.request_code)}
-        <br>
-        Tipo:
-        ${escapeHTML(item.request_type)}
-        <br>
-        Prioridade:
-        ${escapeHTML(item.priority)}
-        <br>
-        Estado:
-        ${formatStatus(item.status)}
-        <br>
-        ${escapeHTML(item.description)}
-        ${
-            item.admin_response
-                ? "<br><br>Resposta MOSELI: " +
-                  escapeHTML(
-                      item.admin_response
-                  )
-                : ""
-        }
-        <br>
-        <small>
-            ${formatDateTime(item.created_at)}
-        </small>
-    </div>
-`;
-
-}
-
-function formatCollectionRequestCard(item) {
-
-return `
-    <div class="info-box">
-        <strong>
-            Pedido de Recolha
-        </strong>
-        <br>
-        Código:
-        ${escapeHTML(item.request_code)}
-        <br>
-        Data:
-        ${formatDate(item.requested_date)}
-        ${
-            item.requested_time
-                ? "<br>Hora: " +
-                  item.requested_time.substring(
-                      0,
-                      5
-                  )
-                : ""
-        }
-        <br>
-        Estado:
-        ${formatStatus(item.status)}
-        ${
-            item.notes
-                ? "<br>" +
-                  escapeHTML(item.notes)
-                : ""
-        }
-        ${
-            item.admin_notes
-                ? "<br><br>Nota MOSELI: " +
-                  escapeHTML(
-                      item.admin_notes
-                  )
-                : ""
-        }
-    </div>
-`;
-
-}
-
-function formatServiceSummary(item) {
-
-return (
-    escapeHTML(item.plan_name) +
-    " • " +
-    escapeHTML(item.frequency) +
-    " • " +
-    formatMoney(
-        item.price,
-        item.currency
-    )
-);
-
-}
-
-function formatStatus(status) {
+function translateStatus(status) {
 
 const map = {
     active:
@@ -1564,24 +1147,9 @@ return map[status] ||
 
 }
 
-function formatMoney(
-amount,
-currency
-) {
-
-const value =
-    Number(amount || 0);
-return value.toLocaleString(
-    "pt-MZ",
-    {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }
-) +
-" " +
-(currency || "MZN");
-
-}
+/* =========================================================
+DATE
+========================================================= */
 
 function formatDate(value) {
 
@@ -1592,7 +1160,11 @@ const date =
     new Date(
         value + "T00:00:00"
     );
-if (Number.isNaN(date.getTime())) {
+if (
+    Number.isNaN(
+        date.getTime()
+    )
+) {
     return value;
 }
 return date.toLocaleDateString(
@@ -1601,38 +1173,34 @@ return date.toLocaleDateString(
 
 }
 
-function formatDateTime(value) {
+/* =========================================================
+MONEY
+========================================================= */
 
-if (!value) {
-    return "--";
-}
-const date =
-    new Date(value);
-if (Number.isNaN(date.getTime())) {
-    return value;
-}
-return date.toLocaleString(
-    "pt-MZ"
+function formatMoney(
+amount,
+currency
+) {
+
+return Number(
+    amount || 0
+).toLocaleString(
+    "pt-MZ",
+    {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }
+) +
+" " +
+(
+    currency ||
+    "MZN"
 );
 
 }
 
-function buildAddress(client) {
-
-return [
-    client.address,
-    client.bairro,
-    client.city
-]
-    .filter(Boolean)
-    .join(
-        ", "
-    ) || "--";
-
-}
-
 /* =========================================================
-UI HELPERS
+TEXT
 ========================================================= */
 
 function setText(
@@ -1641,78 +1209,59 @@ value
 ) {
 
 const element =
-    document.getElementById(id);
+    document.getElementById(
+        id
+    );
 if (!element) {
     return;
 }
 element.textContent =
-    value === null ||
-    value === undefined ||
-    value === ""
-        ? "--"
-        : value;
+    value ||
+    "--";
 
 }
 
-function showLoading(message) {
+/* =========================================================
+ERROR
+========================================================= */
+
+function showError(
+message
+) {
 
 const loading =
     document.getElementById(
         "portalLoading"
     );
-if (!loading) {
-    return;
-}
-loading.hidden =
-    false;
-loading.textContent =
-    message;
-
-}
-
-function hideLoading() {
-
-const loading =
-    document.getElementById(
-        "portalLoading"
-    );
-if (loading) {
-    loading.hidden =
-        true;
-}
-
-}
-
-function showError(message) {
-
-const loading =
-    document.getElementById(
-        "portalLoading"
-    );
-if (!loading) {
-    return;
-}
-loading.hidden =
-    false;
-loading.innerHTML =
-    "<strong>MOSELI</strong><br><br>" +
-    escapeHTML(message);
-loading.style.color =
-    "#b91c1c";
 const content =
     document.getElementById(
         "portalContent"
     );
 if (content) {
-    content.hidden =
-        true;
+    content.hidden = true;
+}
+if (loading) {
+    loading.hidden = false;
+    loading.innerHTML =
+        "<strong>MOSELI</strong><br><br>" +
+        escapeHTML(
+            message
+        );
 }
 
 }
 
-function escapeHTML(value) {
+/* =========================================================
+SECURITY
+========================================================= */
 
-return String(value)
+function escapeHTML(
+value
+) {
+
+return String(
+    value ?? ""
+)
     .replaceAll(
         "&",
         "&amp;"
@@ -1735,20 +1284,3 @@ return String(value)
     );
 
 }
-
-### After saving
-Commit the file to GitHub and wait for GitHub Pages to deploy.
-Then open:
-[MOSELI Client Portal](https://tonipower91.github.io/MOSELI-/client-portal.html?v=20260901-production1&utm_source=chatgpt.com)
-Log in normally.
-### Test in this order
-1. **Dashboard**
-2. **Meu Serviço**
-3. **Recolhas**
-4. **Pagamentos**
-5. **Pedidos**
-6. **Meu Perfil**
-7. Click **Novo Pedido**
-8. Test the form **without submitting yet**
-One important point: **if a page says "Não foi possível carregar..." after this update, don't change anything.** Send me the exact message. That will usually mean an RLS policy needs adjusting for that particular table.
-Also, don't worry if the pages don't look beautiful yet. **First we're making the data flow correctly.** Once the data is working, we can make the portal UI much more professional and add the Portuguese/English language toggle you requested.
