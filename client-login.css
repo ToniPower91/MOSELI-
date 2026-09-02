@@ -97,6 +97,14 @@ max-width: 440px;
 BRAND
 ========================================================= */
 
+.moseli-logo {
+    display: block;
+    width: 260px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto 20px;
+}
+
 .client-login-brand {
 text-align: center;
 margin-bottom: 28px;
