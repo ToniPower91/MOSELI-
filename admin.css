@@ -145,6 +145,22 @@ img {
    BRAND
 ========================================================= */
 
+.sidebar .moseli-logo {
+
+    display: block;
+
+    width: 42px;
+
+    height: 42px;
+
+    max-width: 42px;
+
+    object-fit: contain;
+
+    flex-shrink: 0;
+
+}
+
 .sidebar-header {
   height: 76px;
 
