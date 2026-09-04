@@ -1452,3 +1452,310 @@ button:focus-visible {
     }
 
 }
+
+/* =========================================================
+   MOBILE LAYOUT FIX
+   Prevent sidebar/navigation from creating huge blank space
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    html,
+    body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+
+    .portal-app {
+        display: block;
+        width: 100%;
+        min-height: 100vh;
+    }
+
+
+    /* -----------------------------------------------------
+       MOBILE SIDEBAR
+       ----------------------------------------------------- */
+
+    .portal-sidebar {
+        position: relative;
+
+        top: auto;
+        right: auto;
+        bottom: auto;
+        left: auto;
+
+        width: 100%;
+        height: auto;
+        min-height: 0;
+
+        display: block;
+
+        padding: 14px;
+
+        margin: 0;
+
+        overflow: visible;
+
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+
+        background: var(--white);
+    }
+
+
+    /* -----------------------------------------------------
+       BRAND
+       ----------------------------------------------------- */
+
+    .portal-brand {
+        width: 100%;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 12px;
+
+        margin: 0;
+
+        padding:
+            4px 8px 14px;
+
+        border-bottom: 1px solid var(--border);
+    }
+
+
+    /* -----------------------------------------------------
+       LOGO
+       ----------------------------------------------------- */
+
+    .portal-logo {
+        width: 44px;
+        height: 44px;
+
+        flex: 0 0 44px;
+
+        margin: 0;
+
+        overflow: hidden;
+    }
+
+
+    .portal-logo-image {
+        width: 100%;
+        height: 100%;
+
+        display: block;
+
+        object-fit: contain;
+    }
+
+
+    /* -----------------------------------------------------
+       NAVIGATION
+       ----------------------------------------------------- */
+
+    .portal-navigation {
+        width: 100%;
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 6px;
+
+        margin: 14px 0 0;
+        padding: 0;
+
+        height: auto;
+        min-height: 0;
+
+        align-content: start;
+    }
+
+
+    .portal-nav-item {
+        width: 100%;
+
+        min-height: 40px;
+
+        height: auto;
+
+        margin: 0;
+
+        padding:
+            9px 10px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: flex-start;
+    }
+
+
+    /* -----------------------------------------------------
+       LOGOUT
+       ----------------------------------------------------- */
+
+    .portal-logout {
+        width: 100%;
+
+        display: block;
+
+        margin:
+            12px 0 0;
+
+        height: auto;
+    }
+
+
+    /* -----------------------------------------------------
+       MAIN CONTENT
+       ----------------------------------------------------- */
+
+    .portal-main {
+        width: 100%;
+
+        min-height: 0;
+
+        margin: 0;
+
+        padding:
+            0 14px 30px;
+    }
+
+
+    /* -----------------------------------------------------
+       TOPBAR
+       ----------------------------------------------------- */
+
+    .portal-topbar {
+        width: 100%;
+
+        min-height: 0;
+
+        height: auto;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        justify-content: flex-start;
+
+        gap: 14px;
+
+        margin: 0;
+
+        padding:
+            20px 0 18px;
+    }
+
+
+    /* -----------------------------------------------------
+       CONTENT
+       ----------------------------------------------------- */
+
+    .portal-content {
+        width: 100%;
+
+        padding-top: 18px;
+
+        margin: 0;
+    }
+
+
+    /* -----------------------------------------------------
+       LOADING
+       ----------------------------------------------------- */
+
+    .portal-loading {
+        width: 100%;
+
+        min-height: 180px;
+
+        height: auto;
+    }
+
+
+    /* -----------------------------------------------------
+       DASHBOARD
+       ----------------------------------------------------- */
+
+    .welcome-card {
+        width: 100%;
+
+        margin: 0;
+    }
+
+
+    .portal-cards {
+        width: 100%;
+
+        margin-top: 14px;
+
+        grid-template-columns: 1fr;
+
+        gap: 12px;
+    }
+
+
+    .portal-card {
+        width: 100%;
+
+        min-height: 105px;
+    }
+
+
+    /* -----------------------------------------------------
+       SECTIONS
+       ----------------------------------------------------- */
+
+    .portal-section {
+        width: 100%;
+
+        margin: 0;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+    .portal-navigation {
+        grid-template-columns: 1fr;
+
+        margin-top: 12px;
+    }
+
+
+    .portal-logo {
+        width: 40px;
+        height: 40px;
+
+        flex-basis: 40px;
+    }
+
+
+    .portal-content {
+        padding-top: 14px;
+    }
+
+
+    .portal-topbar {
+        padding-top: 16px;
+        padding-bottom: 14px;
+    }
+
+}
